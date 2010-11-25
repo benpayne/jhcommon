@@ -29,7 +29,7 @@
 #define LISTENER_CONTAINER_H
 
 #include "Mutex.h"
-#include "list.h"
+#include "jh_list.h"
 
 template <class ListenerType>
 class ListenerContainer

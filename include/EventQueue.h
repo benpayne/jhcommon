@@ -32,7 +32,7 @@
 #include "Condition.h"
 #include "Mutex.h"
 #include "Event.h"
-#include "list.h"
+#include "jh_list.h"
 
 /**
  * A Class for queuing events.  This is used internally by EventDispatcher.  

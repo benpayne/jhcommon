@@ -31,6 +31,7 @@
  */
 
 #include "logging.h"
+#include "jh_memory.h"
 
 // First set the cat level.
 // There are basically two choices: ALL and DEFAULT

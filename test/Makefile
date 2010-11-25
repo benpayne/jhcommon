@@ -4,9 +4,9 @@ SUBDIRS = ../src
 
 TARGET_PROGS = eventThreadTest selectorTest timerTest comServerTest \
 	loggingTest listenerContainerTest sigAlrmTest circularBufTest \
-	rtcTest URITest SocketTest HttpTest TimeUtilsTest circularBufTest2 \
+	URITest SocketTest HttpTest TimeUtilsTest circularBufTest2 \
 	SocketTest2 FileTest loggingTest2 allocatorTest eventAgentTest \
-	telnetServer
+	telnetServer regexTest
 
 TARGET_LIBS = libfooservice
 
@@ -26,6 +26,7 @@ SRCS_loggingTest2 = loggingTest2.cpp
 SRCS_allocatorTest = allocatorTest.cpp
 SRCS_eventAgentTest = eventAgentTest.cpp
 SRCS_telnetServer = TelnetServer.cpp
+SRCS_regexTest = regexTest.cpp
 
 SRCS_comServerTest = comServer.cpp
 LIBS_comServerTest = jhcomserver
@@ -39,9 +40,6 @@ LDFLAGS_circularBufTest = -lpthread -lrt
 
 SRCS_circularBufTest2 = CircularBufferTest2.cpp
 LDFLAGS_circularBufTest2 = -lpthread -lrt
-
-SRCS_rtcTest = rtctest.c
-PLATFORMS_rtcTest = LinuxPC
 
 BIN = test
 

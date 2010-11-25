@@ -29,7 +29,7 @@
 #define JH_URI_H_
 
 #include <string>
-#include "vector.h"
+#include "jh_vector.h"
 
 /**
  Class to parse and generate URI's.  The names of methods follow the naming 

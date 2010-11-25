@@ -35,7 +35,7 @@
 #include <string.h>
 #include "Selector.h"
 #include "File.h"
-#include "vector.h"
+#include "jh_vector.h"
 
 class Socket;
 class ServerSocket;

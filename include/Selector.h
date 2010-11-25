@@ -28,7 +28,7 @@
 #ifndef JH_SELECTOR_H_
 #define JH_SELECTOR_H_
 
-#include "list.h"
+#include "jh_list.h"
 #include "EventThread.h"
 #include "Mutex.h"
 

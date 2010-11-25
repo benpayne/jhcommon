@@ -117,7 +117,8 @@ public:
 	 * Get a pointer to the data at an offset into the buffer.  Upon returning
 	 *  you will be told how many bytes following this ptr are valid.  Due to 
 	 *  buffer wrapping this may be less that the length of the remaining data
-	 *  in the buffer.
+	 *  in the buffer.  This does not move the read pointer.  Calling
+	 *  read( NULL, size ) will move the read pointer.
 	 */
 	const uint8_t *getBytes( int i, int &size ) const;
 	

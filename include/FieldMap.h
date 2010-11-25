@@ -28,7 +28,7 @@
 #ifndef FIELDMAP_H_
 #define FIELDMAP_H_
 
-#include "list.h"
+#include "jh_list.h"
 
 /**
  *	@brief Field mapping base interface
