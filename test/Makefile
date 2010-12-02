@@ -6,7 +6,7 @@ TARGET_PROGS = eventThreadTest selectorTest timerTest comServerTest \
 	loggingTest listenerContainerTest sigAlrmTest circularBufTest \
 	URITest SocketTest HttpTest TimeUtilsTest circularBufTest2 \
 	SocketTest2 FileTest loggingTest2 allocatorTest eventAgentTest \
-	telnetServer regexTest
+	telnetServer regexTest stringTest
 
 TARGET_LIBS = libfooservice
 
@@ -27,6 +27,7 @@ SRCS_allocatorTest = allocatorTest.cpp
 SRCS_eventAgentTest = eventAgentTest.cpp
 SRCS_telnetServer = TelnetServer.cpp
 SRCS_regexTest = regexTest.cpp
+SRCS_stringTest = stringTest.cpp
 
 SRCS_comServerTest = comServer.cpp
 LIBS_comServerTest = jhcomserver

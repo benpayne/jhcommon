@@ -33,6 +33,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+#define TestFailed( str... ) TestFailedInternal( __FILE__, __LINE__, ## str )
+
 class TestCase
 {
 public:
@@ -89,13 +91,13 @@ protected:
 		mTestPassed = true;
 	}
 	
-	void TestFailed( const char *fmt, ... )
+	void TestFailedInternal( const char *filename, int line_num, const char *fmt, ... )
 	{
 		va_list params;
 
 		va_start(params, fmt);
 		
-		printf( " FAILED\n" );
+		printf( " FAILED at %s:%d\n", filename, line_num );
 		vprintf( fmt, params );
 		printf( "\n" );
 		// when Test Fails we exit the thread.
