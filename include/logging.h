@@ -589,6 +589,6 @@ do { \
 
 #else // _LOGGING_H_
 #ifndef _INCLUDING_LOGGING_IN_HEADER_
-#warning Do not include logging.h in header files.
+#warning Do not include logging.h in header files (or maybe you accidentally included it twice in your .cpp file).
 #endif
 #endif

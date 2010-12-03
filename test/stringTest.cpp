@@ -25,7 +25,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
  
- #include "logging.h"
+#include "logging.h"
 #include "jh_memory.h"
 
 #include <string.h>

@@ -29,7 +29,7 @@
 #define COMPONENTMANAGER_H_
 
 #include "JHCOM.h"
-#include "list.h"
+#include "jh_list.h"
 
 using namespace JHCOM;
 

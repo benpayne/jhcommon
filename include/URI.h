@@ -28,7 +28,7 @@
 #ifndef JH_URI_H_	
 #define JH_URI_H_
 
-#include <string>
+#include "jh_string.h"
 #include "jh_vector.h"
 
 /**
@@ -42,7 +42,7 @@ class URI
 public:
 	URI();
 	URI( const char *uri );
-	URI( const std::string &uri );
+	URI( const JHSTD::string &uri );
 	URI( const URI &other );
 	~URI();
 	
@@ -52,31 +52,31 @@ public:
 	bool operator == (const URI &other) const;
 	bool operator != (const URI &other) const;
 
-	const std::string &getScheme() const;
-	void setScheme( const std::string &scheme );
+	const JHSTD::string &getScheme() const;
+	void setScheme( const JHSTD::string &scheme );
 
-	const std::string &getAuthority() const;
-	void setAuthority( const std::string &authority );
-	std::string getHost() const;
+	const JHSTD::string &getAuthority() const;
+	void setAuthority( const JHSTD::string &authority );
+	JHSTD::string getHost() const;
 	int getPort() const;
 
-	const std::string &getPath() const;
-	void setPath( const std::string &path );
+	const JHSTD::string &getPath() const;
+	void setPath( const JHSTD::string &path, bool relative = false );
 
-	std::string getPathAndQuery() const;
+	JHSTD::string getPathAndQuery() const;
 
-	const std::string &getQuery() const;
-	void setQuery( const std::string &query );
-	void appendQueryParam( const std::string &key, const std::string &value );
-	void removeQueryParam( const std::string &key );
-	const std::string &getQueryParam( const std::string &key ) const;
+	const JHSTD::string &getQuery() const;
+	void setQuery( const JHSTD::string &query );
+	void appendQueryParam( const JHSTD::string &key, const JHSTD::string &value );
+	void removeQueryParam( const JHSTD::string &key );
+	const JHSTD::string &getQueryParam( const JHSTD::string &key ) const;
 
-	const std::string &getFragment() const;
-	void setFragment(const std::string &fragment );
+	const JHSTD::string &getFragment() const;
+	void setFragment(const JHSTD::string &fragment );
 	
-	const std::string &getString() const;
+	const JHSTD::string &getString() const;
 	bool setString( const char *uri );
-	bool setString( std::string &uri );
+	bool setString( JHSTD::string &uri );
 	
 	bool isRelative() const { return mRelative; }
 
@@ -94,8 +94,8 @@ private:
 	{
 		QueryParam() {}
 		
-		QueryParam(const std::string& key, const std::string &value)
-		:	mKey(key), mParam(value)
+		QueryParam(const JHSTD::string& key, const JHSTD::string &value) 
+		: mKey(key), mParam(value)
 		{
 		}
 		
@@ -111,21 +111,21 @@ private:
 			return *this;
 		}
 		
-		std::string mKey;
-		std::string mParam;
+		JHSTD::string mKey;
+		JHSTD::string mParam;
 	};
 
-	int findParam( const std::string &key ) const;
+	int findParam( const JHSTD::string &key ) const;
 	
 	bool mRelative;
 	mutable bool mModified;
 	mutable bool mModifiedQuery;
-	mutable std::string mFullString;
-	mutable std::string mQueryString;
-	std::string mScheme;
-	std::string mAuthority;
-	std::string mPath;
-	std::string mFragment;
+	mutable JHSTD::string mFullString;
+	mutable JHSTD::string mQueryString;
+	JHSTD::string mScheme;
+	JHSTD::string mAuthority;
+	JHSTD::string mPath;
+	JHSTD::string mFragment;
 	JetHead::vector<QueryParam> mQueryParams;
 };
 

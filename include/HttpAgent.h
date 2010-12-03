@@ -32,6 +32,7 @@
 #include "HttpResponse.h"
 #include "CircularBuffer.h"
 #include "Socket.h"
+#include "jh_string.h"
 
 #define TEST_BUFFER_SIZE 64*1024
 
@@ -104,7 +105,7 @@ public:
 	int get( const URI &uri, HttpResponse &res, BodyHandler *handler = NULL );
 	int get( HttpRequest &req, HttpResponse &res, BodyHandler *handler = NULL );
 	int sendAndGet( HttpRequest &req, HttpResponse &res, 
-					const std::string& toSend,
+					const JHSTD::string& toSend,
 					BodyHandler* handler = NULL );
 	
 protected:

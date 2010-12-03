@@ -30,16 +30,14 @@
 #include <netinet/in.h>
 
 #include "URI.h"
-#include "vector.h"
 
 #include "logging.h"
-#include <sstream>
 
 SET_LOG_CAT( LOG_CAT_ALL );
 SET_LOG_LEVEL( LOG_LVL_NOTICE );
 
 using JetHead::vector;
-using namespace std;
+using JHSTD::string;
 
 
 string gNullString;
@@ -161,7 +159,7 @@ const string &URI::getAuthority() const
 	return mAuthority;
 }
 
-void URI::setAuthority( const std::string &authority )
+void URI::setAuthority( const string &authority )
 {
 	mModified = true;
 	mAuthority = authority;
@@ -194,8 +192,7 @@ int URI::getPort() const
 	{
 		int port_num = 0;
 		string port = mAuthority.substr( offset + 1 );
-		stringstream strm( port );
-		strm >> port_num;
+		port_num = strtol( port.c_str(), NULL, 10 );
 		return port_num;
 	}
 }
@@ -205,10 +202,10 @@ const string &URI::getPath() const
 	return mPath;
 }
 
-void URI::setPath( const std::string &path )
+void URI::setPath( const string &path, bool relative )
 {
 	mModified = true;
-	if ( path[ 0 ] != '/' )
+	if ( path[ 0 ] != '/' && relative == false )
 	{
 		mPath = "/";
 		mPath.append( path );
@@ -217,6 +214,8 @@ void URI::setPath( const std::string &path )
 	{
 		mPath = path;
 	}
+
+	mRelative = relative;
 }
 
 const string &URI::getFragment() const
@@ -224,7 +223,7 @@ const string &URI::getFragment() const
 	return mFragment;
 }
 
-void URI::setFragment( const std::string &fragment )
+void URI::setFragment( const string &fragment )
 {
 	mModified = true;
 	mFragment = fragment;
@@ -288,7 +287,7 @@ int URI::findParam( const string &key ) const
 	return -1;
 }
 
-const std::string &URI::getString() const
+const string &URI::getString() const
 {
 	buildString();
 	return mFullString;
@@ -301,7 +300,7 @@ bool URI::setString( const char *uri )
 	return parseString();
 }
 
-bool URI::setString( std::string &uri )
+bool URI::setString( string &uri )
 {
 	clear();
 	mFullString = uri;
@@ -392,34 +391,40 @@ void URI::buildString() const
 	if ( mModified == false )
 		return;
 	
-	stringstream strm( stringstream::in | stringstream::out );
+	string str;
 	
-	strm << mScheme;
-	strm << ":";
-
+	if ( not mScheme.empty() )
+	{
+		str += mScheme;
+		str += ":";
+	}
+	
 	if ( not mAuthority.empty() )
 	{
-		strm << "//";
-		strm << mAuthority;
+		// These URI's do not add a //
+		if ( mScheme != "mailto" && mScheme != "news" )
+			str += "//";
+		
+		str += mAuthority;
 	}
 		
-	strm << mPath;
+	str += mPath;
 	
 	buildQuery();
 	
 	if ( not mQueryString.empty() )
 	{
-		strm << "?";
-		strm << mQueryString;
+		str += "?";
+		str += mQueryString;
 	}
 	
 	if ( not mFragment.empty() )
 	{
-		strm << "#";
-		strm << mFragment;
+		str += "#";
+		str += mFragment;
 	}
 	
-	mFullString = strm.str();
+	mFullString = str;
 	mModified = false;
 }
 
@@ -471,26 +476,26 @@ void URI::buildQuery() const
 	if ( mModifiedQuery == false )
 		return;
 	
-	stringstream strm( stringstream::in | stringstream::out );
+	string str;
 	
 	for (unsigned i = 0; i < mQueryParams.size(); i++)
 	{
 		if ( i != 0 )
-			strm << "&";
+			str += "&";
 
-		strm << mQueryParams[i].mKey;
-		strm << "=";
-		strm << mQueryParams[i].mParam;
+		str += mQueryParams[i].mKey;
+		str += "=";
+		str += mQueryParams[i].mParam;
 	}
 	
-	mQueryString = strm.str();
+	mQueryString = str;
 	mModifiedQuery = false;
 }
 
-std::string URI::getPathAndQuery() const
+string URI::getPathAndQuery() const
 {
 	if (mQueryString.empty()) return mPath;
-	std::string ret = mPath + "?" + mQueryString;
+	string ret = mPath + "?" + mQueryString;
 	return ret;
 }
 

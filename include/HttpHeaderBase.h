@@ -34,7 +34,7 @@
  * Base class for HTTP-like headers (including things like RTSP)
  */
 
-#include <string>
+#include "jh_string.h"
 
 #include "JetHead.h"
 #include "URI.h"
@@ -281,7 +281,7 @@ protected:
 	 * The buffer where the HTTP-style header is generated to before
 	 * being written to the IReaderWriter in the send method.
 	 */
-	mutable std::string mHeaderStr;
+	mutable JHSTD::string mHeaderStr;
 
 private:
 

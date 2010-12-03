@@ -39,7 +39,10 @@
 #define JHSTD	JetHead
 #else
 #define JHSTD	std
+#include <string>
 #endif
+
+#include "jh_memory.h"
 
 namespace JetHead
 {
