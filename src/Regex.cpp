@@ -102,9 +102,9 @@ enum {
 	IN_RANGE_MIN
 };
 
-JetHead::ErrCode	Regex::prepare( const char *regex )
+JetHead::ErrCode	Regex::prepare( const JHSTD::string &regex )
 {
-	int rlen = strlen( regex );
+	int rlen = regex.length();
 	Element *new_element = NULL;
 	Element *cur_node = &mRoot;
 	
@@ -480,7 +480,7 @@ void	Regex::dumpElement( Element *cur_node, std::string &dump )
 	dump.append( strm.str() );
 }
 
-bool	Regex::parse( const char *string )
+bool	Regex::parse( const JHSTD::string &string )
 {	
 	if ( mState != Regex::STATE_PARSED && mState != Regex::STATE_PREPARED )
 		return JetHead::kNotInitialized;

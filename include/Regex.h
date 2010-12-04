@@ -32,6 +32,13 @@
 #include "JetHead.h"
 #include "jh_string.h"
 
+/**
+	Regex is a regular expression parsing class.  It takes a regular expression
+	in the prepare method.  This method will build a tree representing the 
+	RE and calls to parse will us this tree to parse a string.  This means that
+	you can prepare and RE and then us it many times.  Once parsed you can get
+	at the string data captured by 
+ */ 
 class Regex
 {
 public:
@@ -44,20 +51,28 @@ public:
 	 *  into an internal represtation so that it can be reused quickly to match
 	 *  many strings.  This call must be made before calling parse.
 	 */
-	JetHead::ErrCode	prepare( const char *regex );
+	JetHead::ErrCode	prepare( const JHSTD::string &regex );
 
 	/**
 	 * Parse a string and look for a match to the RE that was prepared by a call
 	 *  to prepare repare a regular expression for use. 
 	 */
-	bool	parse( const char *string );
+	 bool	parse( const JHSTD::string &string );
 
 	/**
 	 * If the RE contains any groups, the strings for the match of all groups
 	 *  can be accessed with this call.  You must have successfully parsed a 
-	 *  string for this call to return valid data.  
+	 *  string for this call to return valid data.  You can use getNumGroups to 
+	 *  know how many groups were found in the parse.  
 	 */
 	const JHSTD::string &getData( int i );
+	
+	/**
+	 * Get the number of groups that were found.  This is used to know what 
+	 *  range of number are appropriate to call get data with.  Any number 
+	 *  from 0 - (n-1) should return a valid result.
+	 */ 
+	int getNumGroups();
 	
 	struct RegexPrepareError
 	{
@@ -146,7 +161,7 @@ private:
 	
 	struct ParseData
 	{
-		ParseData( const char *s ) : string( s ), cur_pos( 0 ), 
+		ParseData( const JHSTD::string &s ) : string( s ), cur_pos( 0 ), 
 			backtrack_pos( 0 ), match_count( 0 ) {}
 		
 		JHSTD::string string;
