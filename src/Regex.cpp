@@ -481,22 +481,31 @@ void	Regex::dumpElement( Element *cur_node, std::string &dump )
 }
 
 bool	Regex::parse( const char *string )
-{
-	JetHead::vector<Element *>	mStack;
-	
+{	
 	if ( mState != Regex::STATE_PARSED && mState != Regex::STATE_PREPARED )
 		return JetHead::kNotInitialized;
 	
 	Element *cur_node = &mRoot;
 	ParseData data( string );
 	
+	bool res = processSubTree( cur_node, &data );
+
+	if ( res )
+		mState = Regex::STATE_PARSED;
+
+	return res;
+}
+
+bool	Regex::processSubTree( Element *cur_node, ParseData *data )
+{
+	Element *top_node = cur_node;
+	
 	while( cur_node != NULL )
 	{
-		data.match_count = 0;
-		if ( processElement( cur_node, &data ) == false )
+		if ( processElement( cur_node, data ) == false )
 			return false;
 		
-		if ( cur_node->mType != TYPE_CLASS && cur_node->mChild != NULL )
+		if ( cur_node->mType != TYPE_CLASS && cur_node->mType != TYPE_OR && cur_node->mChild != NULL )
 		{
 			cur_node = cur_node->mChild;
 		}
@@ -509,20 +518,16 @@ bool	Regex::parse( const char *string )
 			bool done = false;
 			while ( !done )
 			{
-				if ( cur_node->mParent == NULL )
+				if ( top_node == cur_node->mParent )
 				{
 					done = true;
 					cur_node = NULL;
 				}
 				else
 				{
-					if ( processChildrenComplete( cur_node, &data ) == false )
-						return false;
 					cur_node = cur_node->mParent;
 					if ( cur_node->mNext != NULL )
 					{
-						if ( processChildrenComplete( cur_node, &data ) == false )
-							return false;
 						cur_node = cur_node->mNext;
 						done = true;
 					}
@@ -531,40 +536,9 @@ bool	Regex::parse( const char *string )
 		}
 	}
 	
-	mState = Regex::STATE_PARSED;
 	return true;
 }
 
-
-bool Regex::processMatch( Element *cur_node, ParseData *data )
-{
-	data->cur_pos += 1;
-	data->match_count += 1;
-	if ( data->match_count <= cur_node->mRepeatMin ) 
-		data->backtrack_pos += 1;
-	if ( cur_node->mRepeatMax == -1 || data->match_count < cur_node->mRepeatMax )
-		processElement( cur_node, data );
-	return true;
-}
-
-bool Regex::processFail( Element *cur_node, ParseData *data )
-{
-	if ( data->match_count == 0 )
-	{
-		if ( cur_node->mRepeatMin == 0 )
-			return true;
-		else if ( (data->cur_pos - data->backtrack_pos) >= cur_node->mRepeatMin )
-		{
-			data->cur_pos -= cur_node->mRepeatMin;
-			processElement( cur_node, data );
-			if ( data->match_count >= cur_node->mRepeatMin )
-				return true;
-		}
-		return false;
-	}
-	else
-		return false;
-} 
 
 #define CUR_CHAR	data->string[ data->cur_pos ]
 
@@ -606,6 +580,19 @@ bool	Regex::processTerminal( Element *cur_node, ParseData *data )
 	return false;
 }
 
+void	Regex::backtrackGroups( ParseData *data )
+{
+	for ( int i = 0; i < (int)mGroups.size(); i++ )
+	{
+		if ( mGroups[ i ].end_pos > data->cur_pos )
+		{
+			std::string &s = mGroups[ i ].string;
+			s.erase( s.length() - ( mGroups[ i ].end_pos - data->cur_pos ) );
+			mGroups[ i ].end_pos = data->cur_pos;
+		}
+	}
+}
+
 bool	Regex::processElement( Element *cur_node, ParseData *data )
 {	
 	if ( cur_node->mType == TYPE_OR )
@@ -613,7 +600,29 @@ bool	Regex::processElement( Element *cur_node, ParseData *data )
 		cur_node->mGroupNum = mGroups.size();
 		mGroups.resize( mGroups.size() + 1 );
 		mGroups[ cur_node->mGroupNum ].start_pos = data->cur_pos;
-		return true;
+
+		LOG_INFO( "Group %d open at %d", cur_node->mGroupNum, data->cur_pos );
+
+		Element *child_node = cur_node->mChild;
+		
+		while ( child_node != NULL )
+		{
+			if ( processSubTree( child_node, data ) )
+			{
+				int len = data->cur_pos - mGroups[ cur_node->mGroupNum ].start_pos;
+
+				mGroups[ cur_node->mGroupNum ].end_pos = data->cur_pos;
+				mGroups[ cur_node->mGroupNum ].string.assign( data->string, 
+					mGroups[ cur_node->mGroupNum ].start_pos, len );
+		
+				LOG_INFO( "Group %d closing, with size of %d and value of %s", cur_node->mGroupNum, len, mGroups[ cur_node->mGroupNum ].string.c_str() );
+				LOG_INFO( "Group %d start %d, end %d", cur_node->mGroupNum, mGroups[ cur_node->mGroupNum ].start_pos, mGroups[ cur_node->mGroupNum ].end_pos );
+				return true;
+			}
+			child_node = child_node->mNext;
+		}
+		
+		return false;
 	}
 	if ( cur_node->mType == TYPE_SEQUENCE )
 	{
@@ -623,94 +632,60 @@ bool	Regex::processElement( Element *cur_node, ParseData *data )
 	{
 		assert( cur_node->mParent->mType == TYPE_SEQUENCE );
 		
-		bool res = processTerminal( cur_node, data );
+		bool backtrack = false;
+		bool res;
+		int start_pos = data->cur_pos;
 		
-		if ( res == false )
-		{
-			if ( cur_node->mRepeatMin == 0 )
-				return true;
-			else if ( (data->cur_pos - data->backtrack_pos) >= cur_node->mRepeatMin )
+		do {
+			data->match_count = 0;
+			res = processTerminal( cur_node, data );
+		
+			while ( ( cur_node->mRepeatMax == -1 || data->match_count < cur_node->mRepeatMax ) && res == true )
 			{
-				data->cur_pos -= cur_node->mRepeatMin;
-				while ( res == false && data->cur_pos >= data->backtrack_pos )
-				{
-					res = processTerminal( cur_node, data );
-					if ( res == false )
-						data->cur_pos -= 1;
-				}
-				
-				if ( data->cur_pos < data->backtrack_pos )
-				{
-					data->cur_pos = data->backtrack_pos;
-					return false;
-				}
-				
+				data->cur_pos += 1;
+				data->match_count += 1;
+				res = processTerminal( cur_node, data );
+			}
+		
+			backtrack = false;
+			
+			if ( res == false )
+			{
 				if ( data->match_count >= cur_node->mRepeatMin )
 					return true;
+				else if ( start_pos > data->backtrack_pos )
+				{
+					LOG_NOTICE( "backtrack %d %d", data->cur_pos, data->backtrack_pos );
+					start_pos -= 1;
+					data->cur_pos = start_pos;
+					backtrack = true;
+					backtrackGroups( data );
+				}
 			}
-			else
-				return false;
-		}
-		
-		if ( CUR_CHAR >= cur_node->mTermStartChar && CUR_CHAR <= cur_node->mTermEndChar )
-			return processMatch( cur_node, data );
-	}
-	else if ( cur_node->mType == TYPE_CLASS )
-	{
-		bool invert = cur_node->mClassInvert;
-		bool match = invert;
-		Element *child_node = cur_node->mChild;
-		
-		while ( child_node != NULL )
+		} while ( backtrack );
+
+		if ( res && data->match_count >= cur_node->mRepeatMin )
 		{
-			if ( !invert )
-			{
-				if ( CUR_CHAR >= child_node->mTermStartChar && CUR_CHAR <= child_node->mTermEndChar )
-					return processMatch( cur_node, data );
-			}
-			else
-			{
-				if ( CUR_CHAR >= child_node->mTermStartChar && CUR_CHAR <= child_node->mTermEndChar )
-					return processFail( cur_node, data );
-			}
-			
-			child_node = child_node->mNext;
+			data->cur_pos += 1;
+			data->match_count += 1;
+			data->backtrack_pos = data->cur_pos - ( data->match_count - cur_node->mRepeatMin );
+			return true;
 		}
-		
-		if ( match )
-			return processMatch( cur_node, data );
-		else
-			return processFail( cur_node, data );
 	}
 	
-	return processFail( cur_node, data );
+	return false;
 }
 
-bool	Regex::processChildrenComplete( Element *cur_node, ParseData *data )
+const JHSTD::string &Regex::getData( int i )
 {
-	if ( cur_node->mType == TYPE_OR )
-	{
-		int len = data->cur_pos - mGroups[ cur_node->mGroupNum ].start_pos;
+	static JHSTD::string null_string( "" );
 
-		mGroups[ cur_node->mGroupNum ].end_pos = data->cur_pos;
-		mGroups[ cur_node->mGroupNum ].string.assign( data->string + mGroups[ cur_node->mGroupNum ].start_pos, 
-			len );
-		
-		LOG_INFO( "Group %d closing, with size of %d and value of %s", cur_node->mGroupNum, len, mGroups[ cur_node->mGroupNum ].string.c_str() );
-		LOG_INFO( "Group %d start %d, end %d", cur_node->mGroupNum, mGroups[ cur_node->mGroupNum ].start_pos, mGroups[ cur_node->mGroupNum ].end_pos );
-	}
-	
-	return true;
-}
-
-const char *Regex::getData( int i )
-{
 	if ( mState != Regex::STATE_PARSED )
-		return NULL;
+		return null_string;
 
 	if ( i >= (int)mGroups.size() )
-		return NULL;
-	
-	return mGroups[ i ].string.c_str();
+		return null_string;
+
+	return mGroups[ i ].string;
 }
 

@@ -102,7 +102,11 @@ TestGroup gParseTests[] = {
 	{ "\\w*abc", "fooabc", true, { NULL, NULL, NULL, NULL, NULL } },		//  same
 	{ "(([a-z]*)([0-9]*))", "foo7", true, { "foo7", "foo", "7", NULL, NULL } },			// group testing
 	{ "(\\w*)abc", "fooabc", true, { "foo", NULL, NULL, NULL, NULL } },		//  same
-	{ "(([a-z]*)a([0-9]*))", "fooa7", true, { "foo7", "foo", "7", NULL, NULL } },			// group testing - with backtracking
+	{ "(([a-z]*)a([0-9]*))", "fooa7", true, { "fooa7", "foo", "7", NULL, NULL } },			// group testing - with backtracking
+	{ "(aa|bb|cc)", "aa", true, { "aa", NULL, NULL, NULL, NULL } },			// group testing - with backtracking
+	{ "(ab|cd|efg)", "efg", true, { "efg", NULL, NULL, NULL, NULL } },			// group testing - with backtracking
+	{ "(ab|cd|efg)", "fg", false, { NULL, NULL, NULL, NULL, NULL } },			// group testing - with backtracking
+	{ "(ab|cd|efg)+", "abcd", true, { "ab", "cd", NULL, NULL, NULL } },			// group testing - with backtracking
 };
 
 class RegexPrepareTest : public TestCase

@@ -30,7 +30,7 @@
 
 #include "jh_vector.h"
 #include "JetHead.h"
-#include <string>
+#include "jh_string.h"
 
 class Regex
 {
@@ -57,7 +57,7 @@ public:
 	 *  can be accessed with this call.  You must have successfully parsed a 
 	 *  string for this call to return valid data.  
 	 */
-	const char *getData( int i );
+	const JHSTD::string &getData( int i );
 	
 	struct RegexPrepareError
 	{
@@ -136,17 +136,6 @@ private:
 		int		mGroupNum;
 	};
 
-	struct ParseData
-	{
-		ParseData( const char *s ) : string( s ), cur_pos( 0 ), 
-			backtrack_pos( 0 ), match_count( 0 ) {}
-		
-		const char *string;
-		int cur_pos;
-		int backtrack_pos;
-		int match_count;
-	};
-
 	struct GroupData
 	{
 		GroupData() : start_pos( 0 ), end_pos( 0 ) {}
@@ -154,13 +143,25 @@ private:
 		int end_pos;
 		std::string string;
 	};
+	
+	struct ParseData
+	{
+		ParseData( const char *s ) : string( s ), cur_pos( 0 ), 
+			backtrack_pos( 0 ), match_count( 0 ) {}
+		
+		JHSTD::string string;
+		int cur_pos;
+		int backtrack_pos;
+		int match_count;
+		//JetHead::vector<GroupData>	groups;
+	};
 
 	void dumpElement( Element *cur_node, std::string &dump );
 	bool processElement( Element *cur_node, ParseData *data );
 	bool processTerminal( Element *cur_node, ParseData *data );
 	bool processChildrenComplete( Element *cur_node, ParseData *data );
-	bool processMatch( Element *cur_node, ParseData *data );
-	bool processFail( Element *cur_node, ParseData *data );
+	bool processSubTree( Element *cur_node, ParseData *data );
+	void backtrackGroups( ParseData *data );
 	
 	enum State {
 		STATE_INIT,

@@ -32,7 +32,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "list.h"
+#include "jh_list.h"
 #include "Thread.h"
 #include <sys/syscall.h>
 
