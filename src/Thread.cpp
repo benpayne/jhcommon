@@ -64,7 +64,7 @@ void *Thread::start_thread( void *arg )
 	//  and causes problems.
 	//pthread_setcanceltype( PTHREAD_CANCEL_ASYNCHRONOUS, NULL );	
 	
-	LOG( "started pid %d tid %d", getpid(), (uint32_t)pthread_self() ); 
+	LOG( "started pid %d tid %d", getpid(), (long)pthread_self() ); 
 	thread->OnStartThread();
 	thread->OnStart();
 	

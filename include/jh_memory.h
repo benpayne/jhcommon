@@ -33,7 +33,7 @@
 #include <stdbool.h>
 //#include <features.h> non-posix header
 
-__BEGIN_DECLS
+//__BEGIN_DECLS
 
 void *jh_alloc( size_t size, const char *file, int line );
 void jh_free( void *ptr, const char *file, int line );
@@ -57,7 +57,7 @@ void jh_free( void *ptr, const char *file, int line );
  */
 void setTraceFile( const char *lfilename );
 
-__END_DECLS
+//__END_DECLS
 
 #define jh_new new ( __FILE__, __LINE__ )
 

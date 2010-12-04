@@ -23,8 +23,6 @@
 		6103A2A00FBA218B004B9028 /* HttpResponse.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6103A2830FBA218B004B9028 /* HttpResponse.cpp */; };
 		6103A2A10FBA218B004B9028 /* JetHead.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6103A2840FBA218B004B9028 /* JetHead.cpp */; };
 		6103A2A20FBA218B004B9028 /* jh_memory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6103A2850FBA218B004B9028 /* jh_memory.cpp */; };
-		6103A2A40FBA218B004B9028 /* logging.c in Sources */ = {isa = PBXBuildFile; fileRef = 6103A2870FBA218B004B9028 /* logging.c */; };
-		6103A2A50FBA218B004B9028 /* logging_syslog.c in Sources */ = {isa = PBXBuildFile; fileRef = 6103A2880FBA218B004B9028 /* logging_syslog.c */; };
 		6103A2A60FBA218B004B9028 /* MulticastSocket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6103A2890FBA218B004B9028 /* MulticastSocket.cpp */; };
 		6103A2A70FBA218B004B9028 /* Mutex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6103A28A0FBA218B004B9028 /* Mutex.cpp */; };
 		6103A2A80FBA218B004B9028 /* Selector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6103A28B0FBA218B004B9028 /* Selector.cpp */; };
@@ -79,10 +77,6 @@
 		6118B1A20FBA2C21006E6059 /* ComponentManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6103A2760FBA218A004B9028 /* ComponentManager.cpp */; };
 		6118B1AD0FBA2C5D006E6059 /* ComponentManagerClient.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6103A2770FBA218A004B9028 /* ComponentManagerClient.cpp */; };
 		6118B1AF0FBA2C6A006E6059 /* ComponentManagerUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6103A2780FBA218B004B9028 /* ComponentManagerUtils.cpp */; };
-		6118B1CA0FBA2EFD006E6059 /* ListThreading.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6118B1C90FBA2EFD006E6059 /* ListThreading.cpp */; };
-		6118B1CF0FBA2FAD006E6059 /* libjhCommon.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D2AAC09D05546B4700DB518D /* libjhCommon.dylib */; };
-		6118B39C0FBE352D006E6059 /* Transaction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6118B3910FBE34ED006E6059 /* Transaction.cpp */; };
-		6118B3A10FBE355E006E6059 /* libjhCommon.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D2AAC09D05546B4700DB518D /* libjhCommon.dylib */; };
 		6118B3CF0FBE4429006E6059 /* jhidl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6118B3AD0FBE3E37006E6059 /* jhidl.cpp */; };
 		6118B3FD0FC22124006E6059 /* libjhCommon.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D2AAC09D05546B4700DB518D /* libjhCommon.dylib */; };
 		6118B3FE0FC22124006E6059 /* libjhcomserver.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 6118B19D0FBA2B8D006E6059 /* libjhcomserver.dylib */; };
@@ -91,6 +85,7 @@
 		6118B4150FC22481006E6059 /* libjhCommon.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D2AAC09D05546B4700DB518D /* libjhCommon.dylib */; };
 		6118B4190FC22552006E6059 /* ITest.idl in Sources */ = {isa = PBXBuildFile; fileRef = 6118B3EE0FC220D0006E6059 /* ITest.idl */; };
 		6118B4CF0FC4EA24006E6059 /* libjhCommon.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D2AAC09D05546B4700DB518D /* libjhCommon.dylib */; };
+		6137290F129E05C50070B633 /* logging.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6137290E129E05C50070B633 /* logging.cpp */; };
 		614B44E70FD5CBE300AD479D /* DumpCPlusPlus.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 614B44E60FD5CBE300AD479D /* DumpCPlusPlus.cpp */; };
 /* End PBXBuildFile section */
 
@@ -109,20 +104,6 @@
 /* End PBXBuildRule section */
 
 /* Begin PBXContainerItemProxy section */
-		6118B1CD0FBA2FA6006E6059 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 0867D690FE84028FC02AAC07 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = D2AAC09C05546B4700DB518D;
-			remoteInfo = jhCommon;
-		};
-		6118B39F0FBE3556006E6059 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 0867D690FE84028FC02AAC07 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = D2AAC09C05546B4700DB518D;
-			remoteInfo = jhCommon;
-		};
 		6118B3F90FC22116006E6059 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 0867D690FE84028FC02AAC07 /* Project object */;
@@ -190,8 +171,6 @@
 		6103A2830FBA218B004B9028 /* HttpResponse.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HttpResponse.cpp; path = ../../src/HttpResponse.cpp; sourceTree = SOURCE_ROOT; };
 		6103A2840FBA218B004B9028 /* JetHead.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = JetHead.cpp; path = ../../src/JetHead.cpp; sourceTree = SOURCE_ROOT; };
 		6103A2850FBA218B004B9028 /* jh_memory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = jh_memory.cpp; path = ../../src/jh_memory.cpp; sourceTree = SOURCE_ROOT; };
-		6103A2870FBA218B004B9028 /* logging.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = logging.c; path = ../../src/logging.c; sourceTree = SOURCE_ROOT; };
-		6103A2880FBA218B004B9028 /* logging_syslog.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = logging_syslog.c; path = ../../src/logging_syslog.c; sourceTree = SOURCE_ROOT; };
 		6103A2890FBA218B004B9028 /* MulticastSocket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MulticastSocket.cpp; path = ../../src/MulticastSocket.cpp; sourceTree = SOURCE_ROOT; };
 		6103A28A0FBA218B004B9028 /* Mutex.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Mutex.cpp; path = ../../src/Mutex.cpp; sourceTree = SOURCE_ROOT; };
 		6103A28B0FBA218B004B9028 /* Selector.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Selector.cpp; path = ../../src/Selector.cpp; sourceTree = SOURCE_ROOT; };
@@ -244,10 +223,8 @@
 		6103A2DD0FBA21F3004B9028 /* vector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = vector.h; path = ../../include/vector.h; sourceTree = SOURCE_ROOT; };
 		6118B19D0FBA2B8D006E6059 /* libjhcomserver.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libjhcomserver.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		6118B1AA0FBA2C47006E6059 /* libjhcomclient.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libjhcomclient.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
-		6118B1BE0FBA2D6E006E6059 /* ListThreading */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ListThreading; sourceTree = BUILT_PRODUCTS_DIR; };
 		6118B1C90FBA2EFD006E6059 /* ListThreading.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ListThreading.cpp; path = ../../test/ListThreading.cpp; sourceTree = SOURCE_ROOT; };
 		6118B3910FBE34ED006E6059 /* Transaction.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Transaction.cpp; sourceTree = "<group>"; };
-		6118B3980FBE3512006E6059 /* Transaction */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Transaction; sourceTree = BUILT_PRODUCTS_DIR; };
 		6118B3AD0FBE3E37006E6059 /* jhidl.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = jhidl.cpp; path = ../../jhidl/jhidl.cpp; sourceTree = SOURCE_ROOT; };
 		6118B3AE0FBE3E37006E6059 /* Reflect.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Reflect.cpp; path = ../../jhidl/Reflect.cpp; sourceTree = SOURCE_ROOT; };
 		6118B3AF0FBE3E37006E6059 /* Reflect.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Reflect.h; path = ../../jhidl/Reflect.h; sourceTree = SOURCE_ROOT; };
@@ -257,6 +234,7 @@
 		6118B3F50FC220F9006E6059 /* jhidl_test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = jhidl_test; sourceTree = BUILT_PRODUCTS_DIR; };
 		6118B63A0FCCE670006E6059 /* IFoo.idl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = IFoo.idl; path = ../../jhidl/IFoo.idl; sourceTree = SOURCE_ROOT; };
 		6118B63B0FCCE670006E6059 /* ISupports.idl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ISupports.idl; path = ../../jhidl/ISupports.idl; sourceTree = SOURCE_ROOT; };
+		6137290E129E05C50070B633 /* logging.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = logging.cpp; path = ../../src/logging.cpp; sourceTree = SOURCE_ROOT; };
 		614B44E10FD5CB5E00AD479D /* DumpCPlusPlus.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DumpCPlusPlus.h; path = ../../jhidl/DumpCPlusPlus.h; sourceTree = SOURCE_ROOT; };
 		614B44E60FD5CBE300AD479D /* DumpCPlusPlus.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DumpCPlusPlus.cpp; path = ../../jhidl/DumpCPlusPlus.cpp; sourceTree = SOURCE_ROOT; };
 		D2AAC09D05546B4700DB518D /* libjhCommon.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libjhCommon.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -276,22 +254,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				6118B4150FC22481006E6059 /* libjhCommon.dylib in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		6118B1BC0FBA2D6E006E6059 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				6118B1CF0FBA2FAD006E6059 /* libjhCommon.dylib in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		6118B3960FBE3512006E6059 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				6118B3A10FBE355E006E6059 /* libjhCommon.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -328,8 +290,6 @@
 				D2AAC09D05546B4700DB518D /* libjhCommon.dylib */,
 				6118B19D0FBA2B8D006E6059 /* libjhcomserver.dylib */,
 				6118B1AA0FBA2C47006E6059 /* libjhcomclient.dylib */,
-				6118B1BE0FBA2D6E006E6059 /* ListThreading */,
-				6118B3980FBE3512006E6059 /* Transaction */,
 				6118B3B50FBE3E69006E6059 /* jhidl */,
 				6118B3F50FC220F9006E6059 /* jhidl_test */,
 			);
@@ -339,6 +299,7 @@
 		0867D691FE84028FC02AAC07 /* jhCommon */ = {
 			isa = PBXGroup;
 			children = (
+				6137290E129E05C50070B633 /* logging.cpp */,
 				6118B3910FBE34ED006E6059 /* Transaction.cpp */,
 				6118B3AA0FBE3E1C006E6059 /* jhidl */,
 				6118B1C90FBA2EFD006E6059 /* ListThreading.cpp */,
@@ -381,8 +342,6 @@
 				6103A2830FBA218B004B9028 /* HttpResponse.cpp */,
 				6103A2840FBA218B004B9028 /* JetHead.cpp */,
 				6103A2850FBA218B004B9028 /* jh_memory.cpp */,
-				6103A2870FBA218B004B9028 /* logging.c */,
-				6103A2880FBA218B004B9028 /* logging_syslog.c */,
 				6103A2890FBA218B004B9028 /* MulticastSocket.cpp */,
 				6103A28A0FBA218B004B9028 /* Mutex.cpp */,
 				6103A28B0FBA218B004B9028 /* Selector.cpp */,
@@ -583,40 +542,6 @@
 			productReference = 6118B1AA0FBA2C47006E6059 /* libjhcomclient.dylib */;
 			productType = "com.apple.product-type.library.dynamic";
 		};
-		6118B1BD0FBA2D6E006E6059 /* ListThreading */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 6118B1C40FBA2D8C006E6059 /* Build configuration list for PBXNativeTarget "ListThreading" */;
-			buildPhases = (
-				6118B1BB0FBA2D6E006E6059 /* Sources */,
-				6118B1BC0FBA2D6E006E6059 /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				6118B1CE0FBA2FA6006E6059 /* PBXTargetDependency */,
-			);
-			name = ListThreading;
-			productName = ListThreading;
-			productReference = 6118B1BE0FBA2D6E006E6059 /* ListThreading */;
-			productType = "com.apple.product-type.tool";
-		};
-		6118B3970FBE3512006E6059 /* Transaction */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 6118B39D0FBE354B006E6059 /* Build configuration list for PBXNativeTarget "Transaction" */;
-			buildPhases = (
-				6118B3950FBE3512006E6059 /* Sources */,
-				6118B3960FBE3512006E6059 /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				6118B3A00FBE3556006E6059 /* PBXTargetDependency */,
-			);
-			name = Transaction;
-			productName = Transaction;
-			productReference = 6118B3980FBE3512006E6059 /* Transaction */;
-			productType = "com.apple.product-type.tool";
-		};
 		6118B3B40FBE3E69006E6059 /* jhidl */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 6118B3CE0FBE3E6E006E6059 /* Build configuration list for PBXNativeTarget "jhidl" */;
@@ -678,7 +603,14 @@
 			isa = PBXProject;
 			buildConfigurationList = 1DEB916408733D950010E9CD /* Build configuration list for PBXProject "jhCommon" */;
 			compatibilityVersion = "Xcode 3.1";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
 			mainGroup = 0867D691FE84028FC02AAC07 /* jhCommon */;
 			productRefGroup = 034768DDFF38A45A11DB9C8B /* Products */;
 			projectDirPath = "";
@@ -687,8 +619,6 @@
 				D2AAC09C05546B4700DB518D /* jhCommon */,
 				6118B19C0FBA2B8D006E6059 /* jhcomserver */,
 				6118B1A90FBA2C47006E6059 /* jhcomclient */,
-				6118B1BD0FBA2D6E006E6059 /* ListThreading */,
-				6118B3970FBE3512006E6059 /* Transaction */,
 				6118B3B40FBE3E69006E6059 /* jhidl */,
 				6118B3F40FC220F9006E6059 /* jhidl_test */,
 			);
@@ -711,22 +641,6 @@
 			files = (
 				6118B1AD0FBA2C5D006E6059 /* ComponentManagerClient.cpp in Sources */,
 				6118B1AF0FBA2C6A006E6059 /* ComponentManagerUtils.cpp in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		6118B1BB0FBA2D6E006E6059 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				6118B1CA0FBA2EFD006E6059 /* ListThreading.cpp in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		6118B3950FBE3512006E6059 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				6118B39C0FBE352D006E6059 /* Transaction.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -768,8 +682,6 @@
 				6103A2A00FBA218B004B9028 /* HttpResponse.cpp in Sources */,
 				6103A2A10FBA218B004B9028 /* JetHead.cpp in Sources */,
 				6103A2A20FBA218B004B9028 /* jh_memory.cpp in Sources */,
-				6103A2A40FBA218B004B9028 /* logging.c in Sources */,
-				6103A2A50FBA218B004B9028 /* logging_syslog.c in Sources */,
 				6103A2A60FBA218B004B9028 /* MulticastSocket.cpp in Sources */,
 				6103A2A70FBA218B004B9028 /* Mutex.cpp in Sources */,
 				6103A2A80FBA218B004B9028 /* Selector.cpp in Sources */,
@@ -777,22 +689,13 @@
 				6103A2AA0FBA218B004B9028 /* Thread.cpp in Sources */,
 				6103A2AB0FBA218B004B9028 /* Timer.cpp in Sources */,
 				6103A2AC0FBA218B004B9028 /* URI.cpp in Sources */,
+				6137290F129E05C50070B633 /* logging.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		6118B1CE0FBA2FA6006E6059 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = D2AAC09C05546B4700DB518D /* jhCommon */;
-			targetProxy = 6118B1CD0FBA2FA6006E6059 /* PBXContainerItemProxy */;
-		};
-		6118B3A00FBE3556006E6059 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = D2AAC09C05546B4700DB518D /* jhCommon */;
-			targetProxy = 6118B39F0FBE3556006E6059 /* PBXContainerItemProxy */;
-		};
 		6118B3FA0FC22116006E6059 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 6118B19C0FBA2B8D006E6059 /* jhcomserver */;
@@ -973,75 +876,6 @@
 			};
 			name = Release;
 		};
-		6118B1C00FBA2D6E006E6059 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 5073E0C609E734A800EC74B6 /* jhCommonProj.xcconfig */;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
-				COPY_PHASE_STRIP = NO;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
-				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				INSTALL_PATH = /usr/local/bin;
-				OTHER_CFLAGS = (
-					"-DPLATFORM_DARWIN",
-					"-DJH_VERSION_STRING=\"\\\"Debug\\\"\"",
-				);
-				PREBINDING = NO;
-				PRODUCT_NAME = ListThreading;
-			};
-			name = Debug;
-		};
-		6118B1C10FBA2D6E006E6059 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
-				COPY_PHASE_STRIP = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				GCC_ENABLE_FIX_AND_CONTINUE = NO;
-				GCC_MODEL_TUNING = G5;
-				INSTALL_PATH = /usr/local/bin;
-				PREBINDING = NO;
-				PRODUCT_NAME = ListThreading;
-				ZERO_LINK = NO;
-			};
-			name = Release;
-		};
-		6118B39A0FBE3513006E6059 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
-				COPY_PHASE_STRIP = NO;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
-				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				INSTALL_PATH = /usr/local/bin;
-				PREBINDING = NO;
-				PRODUCT_NAME = Transaction;
-			};
-			name = Debug;
-		};
-		6118B39B0FBE3513006E6059 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
-				COPY_PHASE_STRIP = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				GCC_ENABLE_FIX_AND_CONTINUE = NO;
-				GCC_MODEL_TUNING = G5;
-				INSTALL_PATH = /usr/local/bin;
-				PREBINDING = NO;
-				PRODUCT_NAME = Transaction;
-				ZERO_LINK = NO;
-			};
-			name = Release;
-		};
 		6118B3B70FBE3E6A006E6059 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1161,24 +995,6 @@
 			buildConfigurations = (
 				6118B1AB0FBA2C47006E6059 /* Debug */,
 				6118B1AC0FBA2C47006E6059 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		6118B1C40FBA2D8C006E6059 /* Build configuration list for PBXNativeTarget "ListThreading" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				6118B1C00FBA2D6E006E6059 /* Debug */,
-				6118B1C10FBA2D6E006E6059 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		6118B39D0FBE354B006E6059 /* Build configuration list for PBXNativeTarget "Transaction" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				6118B39A0FBE3513006E6059 /* Debug */,
-				6118B39B0FBE3513006E6059 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -136,7 +136,7 @@ void Allocator::free( void *buf )
 	{
 		// if we are to coalesce on free, then check now to see if we can combine with
 		// the prev node
-		if ( mDoCoalesceOnFree && (((int)prev + (int)prev->size) == (int) cur_node ))
+		if ( mDoCoalesceOnFree && (((unsigned long)prev + (unsigned long)prev->size) == (unsigned long)cur_node ))
 		{
 			prev->size += cur_node->size;
 			cur_node = prev;
