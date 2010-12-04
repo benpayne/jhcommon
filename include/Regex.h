@@ -29,21 +29,32 @@
 #define JH_REGEX_H_
 
 #include "jh_vector.h"
-#include "JetHead.h"
 #include "jh_string.h"
+#include "JetHead.h"
 
 /**
 	Regex is a regular expression parsing class.  It takes a regular expression
 	in the prepare method.  This method will build a tree representing the 
-	RE and calls to parse will us this tree to parse a string.  This means that
+	RE.  You can call parse use the tree to match a string.  This means that
 	you can prepare and RE and then us it many times.  Once parsed you can get
-	at the string data captured by 
+	at the string data captured by calling getData and getNumGroups will tell
+	you how many groups have been found.  
+	
+	This class attempts to match Perl RE syntax.  Though not much testing has
+	been done to ensure similar results.  RE process is faily complexe and 
+	there is alot of "grey areas" if how data should be processed.  We've 
+	errored on the side if simplicity.  So YMMV...
+	
+	If you looking for an easy way to parse some text, you might want to 
+	consider rolling your own parse.  If you have complexe strings to parse
+	then this class might be your choice.  Also keep in mind that how you write
+	your RE will make a large difference in performance.
  */ 
 class Regex
 {
 public:
 	Regex();
-	Regex( const char *regex );
+	Regex( const JHSTD::string &regex );
 	~Regex();
 	
 	/**
@@ -55,7 +66,10 @@ public:
 
 	/**
 	 * Parse a string and look for a match to the RE that was prepared by a call
-	 *  to prepare repare a regular expression for use. 
+	 *  to prepare repare a regular expression for use.  This starts at the 
+	 *  begining of the string and matchs the entire RE.  If additional text
+	 *  remains in string after the full match of the RE is found then the 
+	 *  result will still be true.
 	 */
 	 bool	parse( const JHSTD::string &string );
 

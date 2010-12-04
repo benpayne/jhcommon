@@ -38,7 +38,7 @@ Regex::Regex() : mState( Regex::STATE_INIT )
 {
 }
 
-Regex::Regex( const char *regex ) : mState( Regex::STATE_INIT )
+Regex::Regex( const JHSTD::string &regex ) : mState( Regex::STATE_INIT )
 {
 	prepare( regex );
 }
