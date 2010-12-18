@@ -75,7 +75,7 @@ public:
 	 *	list of fields the user has specified (parsed) and write the
 	 *	header to the IReaderWriter specified.
 	 */
-	int send(IReaderWriter *writer) const;
+	int send( JetHead::IReaderWriter *writer ) const;
 
 	/**
 	 *	@brief Send header and body in one write
@@ -86,7 +86,7 @@ public:
 	 *  
 	 *  @note This requires making a copy of the supplied data!
 	 */
-	int send(IReaderWriter *writer, const uint8_t* data, int len) const;
+	int send( JetHead::IReaderWriter *writer, const uint8_t* data, int len ) const;
 
 
 	/**
@@ -96,7 +96,7 @@ public:
 	 *	list of fields the user has specified (parsed) and write the
 	 *	header to the IReaderWriter specified.
 	 */
-	int sendto(Socket *writer, const Socket::Address& addr) const;
+	int sendto( JetHead::Socket *writer, const JetHead::Socket::Address& addr ) const;
 	
 	
 	/**
@@ -201,7 +201,7 @@ public:
 	 *
 	 *	@return Success: Number of bytes parsed to retrieve first line
 	 */
-	virtual int parseFirstLine( const CircularBuffer &buf ) { return 0; }
+	virtual int parseFirstLine( const JetHead::CircularBuffer &buf ) { return 0; }
 	
 	/**
 	 *	@brief Parse field from an HTTP-style header
@@ -218,7 +218,7 @@ public:
 	 *
 	 *	@return		Success:		Number of bytes parsed to retrieve field
 	 */
-	virtual int parseLine( const CircularBuffer &buf );
+	virtual int parseLine( const JetHead::CircularBuffer &buf );
 	
 	/**
 	 * the return value for the end of header condition returned
@@ -243,7 +243,7 @@ public:
 	 *	@return			kEOH	If a field line of 0 length is found
 	 *	@return			length	Number of bytes parsed in the field line
 	 */
-	static int searchForLine(const CircularBuffer &buffer);
+	static int searchForLine(const JetHead::CircularBuffer &buffer);
 	
 	//! Print out this header (to stdout)
 	void printHeader();

@@ -26,30 +26,29 @@
  */
 
 #include <sys/stat.h>
+#include <sys/mman.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <dirent.h>
 
 #include "jh_types.h"
 #include "logging.h"
 #include "File.h"
+#include "JH_64BitFops.h"
+
+using namespace JetHead;
 
 SET_LOG_CAT( LOG_CAT_ALL );
-SET_LOG_LEVEL( LOG_LVL_NOTICE );
+SET_LOG_LEVEL( LOG_LVL_INFO );
 
-#ifdef PLATFORM_DARWIN
-#define jh_stat64_t struct stat64
-#define jh_stat64	stat64
-#define jh_lseek	lseek
-#define jh_fstat64	fstat64
-#else
-#define jh_stat64_t struct stat64
-#define jh_stat64	stat64
-#define jh_lseek	lseek64
-#define jh_fstat64	fstat64
-#endif
+File::File() : mFd( -1 ), mSelector( NULL ), mListener( NULL ), 
+	mMapAddress( NULL ), mOpenFlags( 0 ), mError( kNoError )
+{
+}
 
-File::File() : mFd( -1 ), mSelector( NULL ), mMapAddress( NULL )
+File::File( int fd ) : mFd( fd ), mSelector( NULL ), mListener( NULL ), 
+	mMapAddress( NULL ), mOpenFlags( 0 ), mError( kNoError )
 {
 }
 
@@ -58,82 +57,70 @@ File::~File()
 	close();
 }
 
-int File::open( const char *name, int flags )
+JetHead::ErrCode File::open( const Path &name, int flags )
 {
-	struct stat file_status;
-	int permission = 0;
+	return open( name.getString().c_str(), flags ); 
+}
 
+#define O_RDWR_MASK 3
+
+JetHead::ErrCode File::open( const char *name, int flags )
+{
+	int sys_flags = 0;
+	
 	TRACE_BEGIN( LOG_LVL_INFO );
 	
-	int res = stat( name, &file_status );
-	
-	if ( res != 0 && ( flags & O_CREAT ) )
-	{
-		// don't add O_RDWR if O_WRONLY specified in flags
-		if (!(flags & O_WRONLY))
-		{
-			flags |= O_RDWR;
-		}
-		
-		mFd = ::open( name, flags, 0666 );
-		if (mFd == -1)
-		{
-			LOG_ERR_PERROR( "Failed, unable to create file %s", name );
-			return -errno;
-		}
-		return 0;
-	}
-	else if ( res != 0 )
-	{
-		LOG_ERR_PERROR( "Failed, unable to stat file %s", name );
-	}
+	LOG( "Flags %x", flags );
 
-	if ( file_status.st_uid == geteuid() )
-		permission = ( file_status.st_mode >> 6 ) & 6;
-	else if ( file_status.st_gid == getegid() )
-		permission = ( file_status.st_mode >> 3 ) & 6;
+	mOpenFlags = flags;
+	
+	if ( ( flags & OF_RDWR ) == OF_RDWR )
+		sys_flags |= O_RDWR;
+	else if ( flags & OF_READ )
+		sys_flags |= O_RDONLY;
+	else if ( flags & OF_WRITE )
+		sys_flags |= O_WRONLY;
 	else
-		permission = file_status.st_mode & 6;
-
-	if ( permission == 6 )
-		flags |= O_RDWR;
-	else if ( permission == 4 )
-		flags |= O_RDONLY;
-	else if ( permission == 2 )
-		flags |= O_WRONLY;
-	else
-		return -EACCES;
+		sys_flags |= O_RDONLY;
 	
-	// ignore return since it's set in open2
-	open2( name, flags );
-	
-	LOG_INFO( "file %s, fd %d, device is %d", name, mFd, (int) file_status.st_dev );
-
-	if ( mFd == -1 )
+	// trunc and append only effect write operations.  We'll ignore if not 
+	//  opening for write.  Since rumor has it some platforms will do strange
+	//  things when you open read only with these flags.
+	if ( flags & OF_WRITE )
 	{
-		LOG_ERR_PERROR( "Failed, unable to open file %s", name );
-		return -errno;
+		// if both trunc and append are set, we'll trunc.
+		if ( flags & OF_TRUNC )
+			sys_flags |= O_TRUNC;
+		else if ( flags & OF_APPEND )
+			sys_flags |= O_APPEND;
 	}
+	
+	// This is a Linux specific construct that we support on those systems.  
+	//  if O_DIRECT is not passed, all calling code should still work on the 
+	//  non-Linux platform.
+	if ( flags & OF_ODIRECT )
+		sys_flags |= O_DIRECT;
+	
+	LOG( "sys_flags %x", sys_flags );
+	
+	if ( flags & OF_CREATE )
+	{
+		LOG( "Create" );
+		sys_flags |= O_CREAT;
+		mFd = ::open( name, sys_flags, 0666 );
+	}
+	else
+		mFd = ::open( name, sys_flags );
 
-	return 0;
+	if (mFd == -1)
+	{
+		return getErrorCode( errno );
+	}
+	
+	return JetHead::kNoError;
 }
 
-int File::open2( const char *name, int flags )
-{
-	if ( ( flags & O_CREAT ) and !exists( name ) )
-	{
-		flags |= O_RDWR;	
-		mFd = ::open( name, flags, 0666 );
-	}
-	else
-	{
-		mFd = ::open( name, flags );
-	}
-	
-	return 0;
-}
-
-int File::close()
+JetHead::ErrCode File::close()
 {
 	TRACE_BEGIN(LOG_LVL_INFO);
 	LOG_INFO( "fd %d", mFd );
@@ -143,32 +130,32 @@ int File::close()
 		mFd = -1;
 		if ( res == -1 )
 		{
-			LOG_ERR_PERROR("Failed, close error");
-			return -errno;
+			return getErrorCode( errno );
 		}
 	}
 	else
-		return -EBADF;
+		return JetHead::kNotInitialized;
 
-	return 0;
+	return JetHead::kNoError;
 }
 
-void File::setSelector( SelectorListener *listener, Selector *selector )
+void File::setSelector( FileListener *listener, Selector *selector )
 {
 	setSelector( listener, selector, POLLIN );
 }
 
-void File::setSelector( SelectorListener *listener, Selector *selector, 
+void File::setSelector( FileListener *listener, Selector *selector, 
 						short events )
 {
 	TRACE_BEGIN(LOG_LVL_NOTICE);
 	if ( mFd != -1 )
 	{
 		if ( mSelector != NULL )
-			mSelector->removeListener( mFd, listener );
+			mSelector->removeListener( mFd, this );
 		mSelector = selector;
+		mListener = listener;
 		if ( mSelector != NULL )
-			mSelector->addListener( mFd, events, listener );
+			mSelector->addListener( mFd, events, this, (jh_ptr_int_t)this );
 	}
 }
 
@@ -178,7 +165,7 @@ int File::read( void *buffer, int len )
 	int res = ::read( mFd, buffer, len );
 
 	if ( res == -1 )
-		LOG_WARN_PERROR( "read failed" );
+		setError();
 	
 	return res;
 }
@@ -188,7 +175,7 @@ int File::write( const void *buffer, int len )
 	int res = ::write( mFd, buffer, len );
 
 	if ( res == -1 )
-		LOG_WARN_PERROR( "write failed" );
+		setError();
 	
 	return res;
 }
@@ -200,77 +187,61 @@ jh_off64_t	File::getLength() const
 	int res = jh_fstat64( mFd, &file_status );
 
 	if ( res == -1 )
+	{
+		setError();
 		return (jh_off64_t)-1;
+	}
 	
 	return file_status.st_size;
 }
 
 jh_off64_t File::seekEnd()
 {
-	return jh_lseek( mFd, 0, SEEK_END );
+	jh_off64_t res = jh_lseek( mFd, 0, SEEK_END );
+	
+	if ( res == (jh_off64_t)-1 )
+	{
+		setError();
+	}
+	
+	return res;
 }
 
 jh_off64_t	File::getPos() const
 {
-	return jh_lseek( mFd, 0, SEEK_CUR );
+	jh_off64_t res = jh_lseek( mFd, 0, SEEK_CUR );
+	
+	if ( res == (jh_off64_t)-1 )
+	{
+		setError();
+	}
+	
+	return res;
 }
 
 jh_off64_t File::setPos( jh_off64_t offset )
 {
-	return jh_lseek( mFd, offset, SEEK_SET );
+	jh_off64_t res = jh_lseek( mFd, offset, SEEK_SET );
+	
+	if ( res == (jh_off64_t)-1 )
+	{
+		setError();
+	}
+	
+	return res;
 }
 
-bool File::isFile( const char *name )
+uint8_t *File::mmap()
 {
-	struct stat buf;
+	int prot = PROT_READ;
+	size_t length = getLength();
 	
-	int res = stat( name, &buf );
-	
-	if ( res == 0 && (buf.st_mode & S_IFREG) )
-		return true;
-	else 
-		return false;
-}
+	if ( ( mOpenFlags & OF_RDWR ) == OF_RDWR )
+		prot |= PROT_WRITE;
+	else if ( mOpenFlags & OF_WRITE )
+		prot = PROT_WRITE;
 
-bool File::isDir( const char *name )
-{
-	struct stat buf;
-	
-	int res = stat( name, &buf );
-	
-	if ( res == 0 && (buf.st_mode & S_IFDIR) )
-		return true;
-	else 
-		return false;
-}
-
-bool File::exists( const char *name )
-{
-	struct stat buf;
-	
-	int res = stat( name, &buf );
-	
-	if ( res == 0 )
-		return true;
-	else
-		return false;
-}
-
-int File::size( const char *name )
-{
-	struct stat buf;
-
-	int res = stat( name, &buf );
-	
-	if ( res == 0 )
-		return buf.st_size;
-	else
-		return -1;
-}
-
-uint8_t *File::mmap( off_t offset, size_t length, int prot )
-{
-	uint8_t *addr = (uint8_t*)::mmap( NULL, length, prot, MAP_SHARED, mFd, offset );
+	uint8_t *addr = (uint8_t*)::mmap( NULL, length, prot, MAP_SHARED, mFd, 0 );
 
 	if ( addr != MAP_FAILED )
 	{
@@ -278,25 +249,164 @@ uint8_t *File::mmap( off_t offset, size_t length, int prot )
 		mMapLength = length;
 	}
 	else
-		LOG_ERR_PERROR( "Failed to map file" );
+	{
+		setError();
+		addr = NULL;
+	}
 	
 	return addr;
 }
 
-void	File::munmap()
+JetHead::ErrCode	File::munmap()
 {
 	if ( mMapAddress != NULL )
-		::munmap( mMapAddress, mMapLength );
+	{
+		if ( ::munmap( mMapAddress, mMapLength ) != 0 )
+			return getErrorCode( errno );
+	}
+	else
+	{
+		return JetHead::kInvalidRequest;
+	}
+
+	return JetHead::kNoError;
 }
 
-void	File::msync()
+JetHead::ErrCode	File::msync()
 {
 	if ( mMapAddress != NULL )
-		::msync( mMapAddress, mMapLength, MS_ASYNC );
+	{
+		if ( ::msync( mMapAddress, mMapLength, MS_ASYNC ) != 0 )
+			return getErrorCode( errno );
+	}
+	else
+	{
+		return JetHead::kInvalidRequest;
+	}
+
+	return JetHead::kNoError;
 }
 
-void	File::fsync()
+JetHead::ErrCode	File::fsync()
 {
-	::fsync( mFd );	
+	int res = ::fsync( mFd );	
+
+	if ( res == -1 )
+		return getErrorCode( errno );
+	
+	return kNoError;
 }
 
+
+JetHead::ErrCode	File::pipe( File *pipe_files[ 2 ] )
+{
+	int fds[ 2 ];
+	int res = ::pipe( fds );
+
+	if ( res == -1 )
+		return 	getErrorCode( errno );
+	
+	pipe_files[ 0 ] = jh_new File( fds[ 0 ] );	
+	pipe_files[ 1 ] = jh_new File( fds[ 1 ] );
+	
+	return kNoError;
+}
+
+void File::processFileEvents( int fd, short events, jh_ptr_int_t private_data )
+{
+	File *f = (File*)private_data;
+	
+	if ( f->mListener != NULL )
+	{
+		f->mListener->handleData( f, events );
+	}
+}
+
+void	File::setError() const
+{
+	mError = getErrorCode( errno );
+}
+
+#define DIR_HANDLE ((DIR*)mDirHandle)
+
+static const int gNumberEntries = 50;
+
+Directory::Directory() : mNumberEntries( -1 ), mDirHandle( NULL )
+{
+}
+
+bool Directory::open( const Path &p )
+{
+	if ( mDirHandle != NULL )
+		return false;
+	
+	mDirHandle = opendir( p.getString().c_str() );
+	
+	mData.reserve( gNumberEntries );
+	
+	struct dirent dir;
+	struct dirent *dir_ptr = &dir;
+	int i = 0;
+	
+	// fill with the first gNumberEntries files.  This is done to keep this 
+	//  from taking too much time if the directory has 1000's of files.
+	while ( dir_ptr != NULL && i < gNumberEntries )
+	{
+		if ( readdir_r( DIR_HANDLE, &dir, &dir_ptr ) != 0 )
+			return false;
+		
+		if ( dir_ptr != NULL )
+		{
+			mData[ i ] = dir_ptr->d_name;
+			i += 1;
+		}
+	}
+	
+	if ( dir_ptr == NULL ) 
+		mNumberEntries = i + 1;
+	
+	return true;
+}
+
+const Path *Directory::getEntry( int i )
+{
+	if ( mNumberEntries != -1 && i >= mNumberEntries )
+		return NULL;
+
+	if ( i >= (int)mData.size() )
+	{
+		int start = mData.size();
+		int read_size = i - start;
+		
+		if ( read_size < gNumberEntries )
+			read_size = gNumberEntries;
+		
+		mData.reserve( start + read_size );
+		
+		struct dirent dir;
+		struct dirent *dir_ptr = &dir;
+		int j = 0;
+		
+		// fill with the first gNumberEntries files.  This is done to keep this 
+		//  from taking too much time if the directory has 1000's of files.
+		while ( dir_ptr != NULL && j < read_size )
+		{
+			if ( readdir_r( DIR_HANDLE, &dir, &dir_ptr ) != 0 )
+				return false;
+		
+			if ( dir_ptr != NULL )
+			{
+				mData[ start + j ] = dir_ptr->d_name;
+				j += 1;
+			}
+		}
+	
+		if ( dir_ptr == NULL ) 
+			mNumberEntries = j + 1;
+	}
+	
+	if ( i >= (int)mData.size() )
+		return NULL;
+	else
+		return &mData[ i ];
+}

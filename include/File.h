@@ -35,154 +35,197 @@
  * careful of the open/open2 distinctions.
  */
 
-#include <sys/mman.h>
-
 #include "IReaderWriter.h"
 #include "Selector.h"
+#include "Path.h"
+#include "JetHead.h"
 
 //! @note jh_memoryc is only included here because too many people rely on it
 #include "jh_memory.h"		
 #include "jh_types.h"
+#include "jh_string.h"
 
-/**
- *	@brief Jethead File class
- */
-class File : public IReaderWriter
+namespace JetHead
 {
-public:
-	//! Default constructor, doesn't really do anything.
-	File();
-
-	//! Close it up if needed
-	virtual ~File();
-
-	/**
-	 *	Open a file giving the filename.  If you are opening a file
-	 *	that exists this class will check your permission on the file
-	 *	and open it with the least restrictive permissions allowed.
-	 *	You can specify other options through the flags param, these
-	 *	are the same option that go to the system call open.
-	 * 
-	 *  @note You probably need to read the description on this
-	 *  carefully if you are having problems with opening files.
-	 * 
-	 *	@param name the name of the file to open or create.
-	 *
-	 *	@param flags the flags for the open, O_RDWR flags do not need
-	 *	to be set.
-	 *
-	 *	@return the -errno or 0
-	 */
-	virtual int open( const char *name, int flags = 0 );
-
-	/**
-	 * A straight passthrough to open(2).  Doesn't do the
-	 * flag-manipulation that File::open does.
-	 */
-	int open2( const char *name, int flags = 0 );
+	class File;
 	
-	/**
-	 *	Close the file allowing this object to open another file.
-	 */
-	int close();
-
-	/**
-	 *	Add a selector listener to the File
-	 */
-	void setSelector( SelectorListener *listener, Selector *selector );
-
-	//! Add a listener with the specified event mask
-	void setSelector( SelectorListener *listener, Selector *selector, 
-					  short events );
-	
-	//! A passthrough for read(2)
-	int read( void *buffer, int len );
-
-	//! A passthrough for write(2)
-	int write( const void *buffer, int len );
-	
-	/**
-	 *	Get the file position (64-bit safe)
-	 */
-	jh_off64_t	getPos() const;
-	
-	/**
-	 *	Seek end of file.  This returns offset to end of file (64-bit safe)
-	 */
-	jh_off64_t seekEnd();
-
-	/**
-	 *	Set the file position (64-bit safe)
-	 */
-	jh_off64_t setPos( jh_off64_t offset );
-	
-	/**
-	 *	Return the start offset of the file.  For normal files
-	 *	this is always 0
-	 */
-	virtual jh_off64_t getStartOffset() const
+	class FileListener
 	{
-		return (jh_off64_t)0LL;
-	}
+	public:
+		virtual void handleData( File *f, short event ) = 0;	
+	};
 	
 	/**
-	 *	Get the file length (64-bit safe).  Used in combination with
-	 *	the start offset this can be used to get the end offset of
-	 *	the file.
+	 *	@brief Jethead File class
 	 */
-	jh_off64_t	getLength() const;
+	class File : public IReaderWriter, public SelectorListener
+	{
+	public:
+		//! Default constructor, doesn't really do anything.
+		File();
 	
+		//! Close it up if needed
+		virtual ~File();
 	
-	/**
-	 *	mmap a file, see the man page mmap(2)
-	 *
-	 *	@return pointer to buffer or MAP_FAILED
-	 */
-	uint8_t *mmap( off_t offset, size_t length, 
-				   int prot = (PROT_READ | PROT_WRITE) );
-
-	//! Unmap the memory mapping for this file
-	void	munmap();
-
-	//! Make sure everything in the memory mapped buffer gets to disk
-	void 	msync();
+		enum OpenFlags {
+			OF_READ = 1,
+			OF_WRITE = 2,
+			OF_RDWR = 3,
+			OF_TRUNC = 4,	// if trunc and append are set, append will have no effect.
+			OF_APPEND = 8,
+			OF_CREATE = 16,
+			OF_ODIRECT = 32,
+		};
 	
-	/**
-	 *	copies all data from caches to disk
-	 */
-	void	fsync();
+		/**
+		 *	Open a file giving the filename.  
+		 * 
+		 *	@param name the Path object of the file to open or create.
+		 *	@param flags the flags for the open, see OpenFlags enum.
+		 */
+		ErrCode open( const Path &name, int flags = OF_READ );
+
+		/**
+		 *	Open a file giving the filename.  
+		 * 
+		 *	@param name the Path object of the file to open or create.
+		 *	@param flags the flags for the open, see OpenFlags enum.
+		 */
+		virtual ErrCode open( const char *name, int flags = OF_READ );
+		
+		/**
+		 *	Close the file allowing this object to open another file.
+		 */
+		virtual ErrCode close();
 	
-	//! Helper for "is this a valid file on disk?"
-	static bool isFile( const char *name );
-
-	//! Helper for "is this a valid directory name on disk?"
-	static bool isDir( const char *name );
-
-	//! Helper for "is there a directory entry of this name?"
-	static bool exists( const char *name );
-
-	//! Helper for "how big is this file?"
-	static int size( const char *name );
+		/**
+		 *	Add a selector listener to the File
+		 */
+		void setSelector( FileListener *listener, Selector *selector );
 	
-protected:
-	/**
-	 * The file descriptor from open(2)
-	 * @todo Should this be made private?
-	 */
-	int mFd;
-
-	//! Give access to the fd for child classes
-	int getFd() { return mFd; }
+		//! Add a listener with the specified event mask
+		void setSelector( FileListener *listener, Selector *selector, 
+						  short events );
+		
+		//! A passthrough for read(2)
+		int read( void *buffer, int len );
 	
-private:
-	//! The selector we are living on
-	Selector *mSelector;
+		//! A passthrough for write(2)
+		int write( const void *buffer, int len );
+		
+		/**
+		 *	Get the file position (64-bit safe)
+		 */
+		jh_off64_t	getPos() const;
+		
+		/**
+		 *	Seek end of file.  This returns offset to end of file (64-bit safe)
+		 */
+		jh_off64_t seekEnd();
+	
+		/**
+		 *	Set the file position (64-bit safe)
+		 */
+		jh_off64_t setPos( jh_off64_t offset );
+		
+		/**
+		 *	Return the start offset of the file.  For normal files
+		 *	this is always 0
+		 */
+		virtual jh_off64_t getStartOffset() const
+		{
+			return (jh_off64_t)0LL;
+		}
+		
+		/**
+		 *	Get the file length (64-bit safe).  Used in combination with
+		 *	the start offset this can be used to get the end offset of
+		 *	the file.
+		 */
+		jh_off64_t	getLength() const;
+		
+		
+		/**
+		 *	mmap a file, see the man page mmap(2)
+		 *
+		 *	@return pointer to buffer or MAP_FAILED
+		 */
+		uint8_t *mmap();
+	
+		//! Unmap the memory mapping for this file
+		ErrCode	munmap();
+	
+		//! Make sure everything in the memory mapped buffer gets to disk
+		ErrCode 	msync();
+		
+		/**
+		 *	copies all data from caches to disk
+		 */
+		ErrCode	fsync();
+	
+		/** Some methods don't have a good way to return f the above methods return an error condition, then this method can
+		 *   be called to get the exact error.
+		 */
+		JetHead::ErrCode	getLastError() { return mError;	}
+		
+		enum {
+			//! files[PIPE_READER] is the read end
+			PIPE_READER = 0,
 
-	//! The address we are mmaped onto
-	uint8_t *mMapAddress;
+			//! files[PIPE_WRITER] is the write end
+			PIPE_WRITER = 1
+		};
+		
+		/** 
+		 * pipe - create a pipe, this will give two files back, one for reading 
+		 *  and one for writing.  files[ 0 ] is for reading and files[ 1 ] is for 
+		 *  writing.
+		 * @param files - an array of two File*, item 0 is the read file and item 1 is the write file 
+		 */
+		 static JetHead::ErrCode pipe( File *files[ 2 ] );
+				
+	protected:
+		/**
+		 * The file descriptor from open(2)
+		 * @todo Should this be made private?
+		 */
+		int mFd;
+	
+		//! Give access to the fd for child classes
+		int getFd() { return mFd; }
+		
+		virtual void processFileEvents( int fd, short events, 
+											jh_ptr_int_t private_data );
 
-	//! The size of the mmapped buffer (needed for munmap)
-	size_t	mMapLength;
+	private:
+		//! constructor for building a File object from an fd.
+		File( int fd );
+	
+		//! used internally to set the error code from errno.
+		void setError() const;
+		
+		Selector 		*mSelector;
+		FileListener	*mListener;		
+		uint8_t 		*mMapAddress;	
+		size_t			mMapLength;		
+		int 			mOpenFlags;
+		mutable ErrCode mError;
+	};
+	
+	class Directory 
+	{
+	public:
+		Directory();
+		
+		bool open( const Path &p );
+	
+		const Path *getEntry( int i );
+		
+	private:
+		JetHead::vector<Path> mData;
+		int mNumberEntries;
+		void *mDirHandle;
+	};
 };
-
+	
 #endif // JH_FILE_H_

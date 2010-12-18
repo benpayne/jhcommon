@@ -53,12 +53,12 @@ public:
 
 	MethodType getMethod() const { return mMethod; }
 	const URI &getURI() const { return mUri; }
-	void getVersion(int& major, int& minor);
+	void getVersion( int& major, int& minor );
 
 	void setMethod( MethodType type ) { mMethod = type; }
 	void setURI( const URI &uri ) { mUri = uri; }
 
-	int parseFirstLine( const CircularBuffer &buf );
+	int parseFirstLine( const JetHead::CircularBuffer &buf );
 	
 protected:
 	virtual int buildFirstLine() const;

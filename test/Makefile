@@ -4,7 +4,7 @@ SUBDIRS = ../src
 
 TARGET_PROGS = eventThreadTest selectorTest timerTest comServerTest \
 	loggingTest listenerContainerTest sigAlrmTest circularBufTest \
-	URITest SocketTest HttpTest TimeUtilsTest circularBufTest2 \
+	URITest SocketTest HttpTest TimeUtilsTest \
 	SocketTest2 FileTest loggingTest2 allocatorTest eventAgentTest \
 	telnetServer regexTest stringTest
 
@@ -38,9 +38,6 @@ LIBS_libfooservice = jhcomclient
 
 SRCS_circularBufTest = CircularBufferTest.cpp
 LDFLAGS_circularBufTest = -lpthread -lrt
-
-SRCS_circularBufTest2 = CircularBufferTest2.cpp
-LDFLAGS_circularBufTest2 = -lpthread -lrt
 
 BIN = test
 

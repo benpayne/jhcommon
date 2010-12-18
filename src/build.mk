@@ -22,7 +22,7 @@ $(DIR)_JH_COMMON_SRCS = CircularBuffer.cpp Thread.cpp \
 	AppArgs.cpp URI.cpp JetHead.cpp FdReaderWriter.cpp \
 	HttpHeaderBase.cpp HttpHeader.cpp HttpRequest.cpp HttpResponse.cpp \
 	HttpAgent.cpp logging.cpp MulticastSocket.cpp \
-	Allocator.cpp Condition.cpp Mutex.cpp
+	Allocator.cpp Condition.cpp Mutex.cpp Regex.cpp Path.cpp
 
 SRCS_libjhcommon := $($(DIR)_JH_COMMON_SRCS)
 
@@ -34,7 +34,7 @@ CFLAGS_libjhcommongb := -DUSE_GUARD_BANDS -DUSE_WRAPPERS
 
 SRCS_libjhcomserver := ComponentManager.cpp ComponentManagerUtils.cpp
 
-SRCS_libjhcomclient := ComponentManagerClient.cpp ComponentManagerUtils.cpp
+SRCS_libjhcomclient := ComponentManager.cpp ComponentManagerUtils.cpp
 
 include $(TOPSRCDIR)/jhbuild/rules.mk
 

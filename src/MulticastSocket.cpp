@@ -32,6 +32,8 @@
 SET_LOG_CAT( LOG_CAT_ALL );
 SET_LOG_LEVEL( LOG_LVL_NOTICE );
 
+using namespace JetHead;
+
 MulticastSocket::MulticastSocket()
 	: ServerSocket(false),
 	  mInGroup(false)

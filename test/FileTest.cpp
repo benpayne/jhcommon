@@ -29,198 +29,55 @@
 #include "jh_memory.h"
 #include "logging.h"
 #include "Selector.h"
-#include <iostream>
-#include <stdio.h>
-#include <sys/ioctl.h>
-#include <unistd.h>
-using namespace std;
-using namespace __gnu_cxx;
+#include "jh_list.h"
+
+using namespace JetHead;
 
 SET_LOG_CAT( LOG_CAT_ALL );
 SET_LOG_LEVEL( LOG_LVL_INFO );
 
-#include <fcntl.h>
-
 #include "TestCase.h"
-#include <algorithm>
-#include <ext/numeric>
-#include <list>
 
-#define FNAME1 "tmp1"
-#define FNAME2 "tmp2"
-#define FNAME3 "tmp3"
-#define FNAME4 "tmp4"
-#define FNAME5 "tmp5"
-#define FNAME6 "tmp6"
-
-// BUF_SIZE = 26
-#define BUF_SIZE ('z' - 'a' + 1)
-
-using namespace __gnu_cxx;
-
-
-/* Things to know:
- * 
- * 1) Opening a File opens rdwr (ie. it wont nuke wants in the file but 
- * the offset is set to 0.
- *
- * 2) The SelectorListener is slow, it is very easy to overwhelm it.
- */
-class FileTest : public TestCase, public SelectorListener
+class FileTest : public TestCase, public FileListener
 {
 public:
-	FileTest(int test_id);
+	FileTest( int test_id );
 	virtual ~FileTest();
 
+	void Run();
+		
 protected:
-	virtual void processFileEvents(int fd, short events, uint32_t);
+	virtual void handleData( File *f, short events );
 
 private:
-
-	void Run();
-	void Test1(); // Basic tests
-	void Test2(); // Error cases
-	void Test3(); // Selector
-
-	int mTest;
-	list<char> l1, l2, l3;
-	int dumpfile;
+	void Test1(); // Open/Close tests
+	void Test2(); // read/write tests
+	void Test3(); // Position tests
+	void Test4(); // mmap tests
+	void Test5(); // Pipe and Selector tests
+	void Test6(); // JetHead::getErrorString testing.
 	
-
+	bool fillFile( File &f );
+	bool validateFile( File &f );
+	
+	int mTest;
 };
 
-// We will have our constructor do a lot of the set-up work.
-// The reason we have so many different files is that we create
-// all instances of the class before any of the tests are run.
-// So reusing files causes problems.
-FileTest::FileTest(int test_id)
-	: TestCase("FileTest"), mTest(test_id)
+FileTest::FileTest( int test_id ) : TestCase( "FileTest" ), mTest( test_id )
 {
-	
-	// This 32 causes magic numbers everywhere :(
-	char name[32];
-	fill( name, name + 32, 0);
-	sprintf(name, "File Test %d", test_id);
-	SetTestName(name);
-	int res;
-	
-	
-	if (test_id == 1)
-	{
-		
-		res = ::open("tmp1", O_CREAT | O_RDWR | O_TRUNC, 
-						 S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
-		
-		if ( res < 0 )
-			TestFailed("Error starting test");
-		else
-		{
-			// Put some data in the file
-			write(res, name, sizeof(name));
-			l1.insert(l1.begin(), name, name + 32);
-			close(res);
-		}
-		
-		res = open(FNAME2, O_CREAT | O_RDWR | O_TRUNC,
-				   S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
-		if ( res < 0 )
-			TestFailed("Error starting test");
-		else
-		{
-			// Put some data in the file
-			write(res, name, sizeof(name));
-			l2.insert(l2.begin(), name, name + 32);
-			close(res);
-		}
-		
-		res = open(FNAME3, O_CREAT | O_RDWR | O_TRUNC,
-				   S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
-		if ( res < 0 )
-			TestFailed("Error starting test");		
-		else
-		{
-			// Put some data in the file.
-			write(res, name, sizeof(name));
-			l3.insert(l3.begin(), name, name + 32);
-			close(res);
-		}
-	}
-	else if(mTest == 2)
-	{
-
-		res = open(FNAME4, O_CREAT | O_RDWR | O_TRUNC,
-				   S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
-		if ( res < 0 )
-			TestFailed("Error starting test");		
-		else
-			close(res);
-
-	}
-	else if(mTest == 3)
-	{
-
-		res = open(FNAME5, O_CREAT | O_RDWR | O_TRUNC,
-				   S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
-		if ( res < 0 )
-			TestFailed("Error starting test");		
-		else
-			close(res);
-
-		dumpfile = open(FNAME6, O_CREAT | O_RDWR | O_TRUNC | O_APPEND,
-				   S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
-		if ( dumpfile < 0 )
-			TestFailed("Error starting test");		
-		else
-			; 
-		// We'll close it on exit.
-	}
-	
-
+	char name[ 32 ];
+	snprintf( name, 32, "FileTest%d", test_id );
+	name[ 31 ] = '\0';
+	SetTestName( name );	
 }
 
 // Have the destructor do our clean up work. 
 FileTest::~FileTest()
 {
-	int res;
-
-	if (mTest == 1)
-	{
-		
-		res = remove(FNAME1);
-		if ( res != 0 )
-			;
-		// File didn't get erased tell someone
-		res = remove(FNAME2);
-		if ( res != 0 )
-		;
-		// File didn't get erased tell someone
-		res = remove(FNAME3);
-		if ( res != 0 )
-			;
-		// File didn't get erased tell someone
-	}
-	else if (mTest == 2)
-	{
-		res = remove(FNAME4);
-		if ( res != 0 )
-			;
-		// File didn't get erased tell someone
-	}
-	else if (mTest == 3)
-	{
-		res = remove(FNAME5);
-		close(dumpfile);
-		res += remove(FNAME6);
-		if ( res != 0 )
-			;
-		// File didn't get erased tell someone
-	}	
-
 }
 
 void FileTest::Run()
 {
-
 	LOG_NOTICE( "File Test Started" );
 
 	switch(mTest)
@@ -234,338 +91,470 @@ void FileTest::Run()
 	case 3:
 		Test3();
 		break;
+	case 4:
+		Test4();
+		break;
+	case 5:
+		Test5();
+		break;
+	case 6:
+		Test6();
+		break;
 	}
 
 	TestPassed();
+}
+
+bool FileTest::fillFile( File &f )
+{
+	uint8_t buffer[ 256 ];
+	
+	for ( int i = 0; i < 256; i++ )
+		buffer[ i ] = i;
+	
+	for ( int i = 0; i < 6; i++ )
+	{
+		buffer[ 0 ] = i;
+
+		int res = f.write( buffer, 256 );
+		
+		if ( res != 256 )
+			return false;
+	}
+	return true;
+}
+
+bool FileTest::validateFile( File &f )
+{
+	uint8_t buffer[ 256 ];
+	
+	for ( int i = 0; i < 6; i++ )
+	{
+		int res = f.read( buffer, 256 );
+
+		LOG_INFO( "read back failed %d, %d %s", i, res, getErrorString( f.getLastError() ) );
+
+		if ( res != 256 )
+			return false;
+
+		print_buffer2( "File", buffer, 256 );
+		
+		if ( buffer[ 0 ] != i )
+			return false;
+
+		LOG_INFO( "byte one good" );
+		
+		for ( int j = 1; j < 256; j++ )
+		{
+			if ( buffer[ j ] != j )
+			{
+				LOG_INFO( "Failed at byte %d", j );
+				return false;
+			}
+		}
+	}
+	return true;
 }
 
 // Open some files, see what happens when you play with the permissions.
 // Do some writing then do some reading and all the while seek here and there
 void FileTest::Test1()
 {
-
-	File f1, f2, f3;
-	uint stat;
-	
-	stat = f1.open(FNAME1);
-	//l1.clear();
-	if ( stat < 0 )
-	{
-		TestFailed("Error opening %s.", FNAME1);
-	}
-	stat = f2.open(FNAME2, O_APPEND);
-	if( stat < 0 )
-	{
-		TestFailed("Error opening %s.", FNAME2);
-	}
-	stat = f3.open(FNAME3, O_TRUNC);
-	l3.clear();
-	if ( stat < 0 )
-	{
-		TestFailed("Error opening %s.", FNAME3);
-	}
-
-
-	// Do some writing
-	char *buf = jh_new char[BUF_SIZE];
-	iota(buf, buf + BUF_SIZE, 'a');
-	
-	// Use copy instead of insert because the file hasn't been nuked
-	// simply had its offset set to 0.
-	copy(buf, buf + BUF_SIZE, l1.begin());
-	l2.insert(l2.end(),buf, buf + BUF_SIZE);
-	l3.insert(l3.end(),buf, buf + BUF_SIZE);
-	
-	stat = f1.write(buf, BUF_SIZE);
-	if (stat != BUF_SIZE)
-		TestFailed("Write Failed");
-
-	stat = f2.write(buf, BUF_SIZE);
-	if (stat != BUF_SIZE)
-		TestFailed("Write Failed");
-	
-	stat = f3.write(buf, BUF_SIZE);
-	if (stat != BUF_SIZE)
-		TestFailed("Write Failed");
-
-	
-	// Seek
-	stat = f1.getPos();
-	// != BUF_SIZE because we opened the file from the begining and 
-	// only wrote BUF_SIZE data.
-	if ( stat != BUF_SIZE )
-		TestFailed("Open didn't obey our flags 1 %d %d.", stat, l1.size());
-
-	// != BUF_SIZE because we opened the file O_APPEND and therefore 
-	// everthing is relative to the end of the file when it was opened.
-	stat = f3.getPos();
-	if ( stat != BUF_SIZE )
-		TestFailed("Open didn't obey our flags 2 %d %d.", stat, l2.size());
-
-	stat = f3.getPos();
-	if ( stat != l3.size() )
-		TestFailed("Open didn't obey our flags 3 %d %d.", stat, l3.size());
-
-	// Set these to somewhere interesting
-	f1.setPos(BUF_SIZE / 2);
-	// We put 32 chars at the start (see the constructor)
-	f2.setPos(32);
-	f3.setPos(0);
-
-
-	// Write a bit more
-	iota(buf, buf + BUF_SIZE, 'A');
-	list<char>::iterator i1 = l1.begin();
-	advance(i1, BUF_SIZE / 2);
-	
-	// Erase everyting after where we are because it will just
-	// be copied over. (Idealy we would have some sort of copy and extend
-	// function.)
-	l1.erase(i1, l1.end());
-	l1.insert(l1.end(), buf, buf + BUF_SIZE);
-	
-	// Everything is an append therefore offset is reset to the end of the
-	// file before every write.
-	l2.insert(l2.end(), buf, buf + BUF_SIZE);
-
-	
-	copy(buf, buf + BUF_SIZE, l3.begin());
-	
-
-	stat = f1.write(buf, BUF_SIZE);
-	if (stat != BUF_SIZE)
-		TestFailed("Write Failed 1 %d", stat);
-
-	stat = f2.write(buf, BUF_SIZE);
-	if (stat != BUF_SIZE)
-		TestFailed("Write Failed 2 %d", stat);
-	
-
-
-	stat = f3.write(buf, BUF_SIZE);
-	if (stat != BUF_SIZE)
-		TestFailed("Write Failed 3 %d", stat);
-
-
-
-	// Do some reading
-	f1.setPos(0);
-	f2.setPos(0);
-	f3.setPos(0);
-	int dumpbuf_size = (BUF_SIZE) * 2 + 32;
-	char *dumpbuf = jh_new char[dumpbuf_size];
-	fill(dumpbuf, dumpbuf + dumpbuf_size, 0);
-
-	// The magic '32' everywhere is ugly but its here because
-	// thats how long the buffer that we shoved the name of
-	// the test is and we coppied that buffer into the front
-	// of f2 and f3 before we started.
-
-	stat = f1.read(dumpbuf, dumpbuf_size);
-
-	if ( ! equal(l1.begin(), l1.end(), dumpbuf) )
-		TestFailed("Write or Read failed 1.");
-
-	stat = f2.read(dumpbuf, dumpbuf_size);
-	if ( ! equal(l2.begin(), l2.end(), dumpbuf) )
-		TestFailed("Write or Read failed 2.");
-
-	
-	stat = f3.read(dumpbuf, dumpbuf_size);
-	if ( ! equal(l3.begin(), l3.end(), dumpbuf) )
-		TestFailed("Write or Read failed 3.");
-
-	if( !File::isFile(FNAME1) || File::isDir(FNAME1) || !File::exists(FNAME1))
-		TestFailed("isFile, isDir, or exists failed");
-	if( !File::isFile(FNAME2) || File::isDir(FNAME2) || !File::exists(FNAME2))
-		TestFailed("isFile, isDir, or exists failed");
-	if( !File::isFile(FNAME3) || File::isDir(FNAME3) || !File::exists(FNAME3))
-		TestFailed("isFile, isDir, or exists failed");
-
-	stat = f1.close();
-	if ( stat < 0)
-		TestFailed("Close Failed");
-	
-	stat = f2.close();
-	if ( stat < 0 )
-		TestFailed("Close Failed");
-	
-	stat = f3.close();
-	if ( stat < 0)
-		TestFailed("Close Failed");
-
-	
-
-}
-
-
-// Test what happens when you do silly things.
-void FileTest::Test2()
-{
 	File f1;
-	int res;
-	char buf[BUF_SIZE];
-	fill(buf, buf + BUF_SIZE, 'A');
-
-	res = f1.write(buf, BUF_SIZE);
-	if( res > 0 )
-		TestFailed("Write should fail on a File that is not open.");
-
-
-
-	res = f1.read(buf, BUF_SIZE);
-	if( res > 0 )
-		TestFailed("Read should fail on a  File that is not open.");
-
-	res = f1.getPos();
-	if( res > 0 )
-		TestFailed("getPos should fail on a  File that is not open.");
-
-	res = f1.seekEnd();
-	if (res > 0 )
-		TestFailed("seekEnd should fail on a  File that is not open.");
+	ErrCode err;
 	
-	res = f1.setPos(BUF_SIZE);
-	if ( res > 0 )
-		TestFailed("seek should fail on a  File that is not open.");
+	// ensure that p does not exist.
+	Path p( "tmp1" );
+	p.remove();
 	
-	res = f1.getLength();
-	if ( res > 0 )
-		TestFailed("getLength should fail on a  File that is not open.");
+	err = f1.open( "tmp1" );
 
-	res = ::open(FNAME1, 0x000);
-	close(res);
-
-	res = f1.open2(FNAME1);
-	if( res > 0 )
-		TestFailed("open should fail on a file that is not read or"
-				   "writeable.");
-
-	res = f1.close();
-	if( res > 0 )
-		TestFailed("close should fail on a closed File.");
-	   
+	if ( err != kNotFound )
+		TestFailed( "Open file that does not exist failed. \"%s\"", getErrorString( err ) );
 	
-	res = f1.open(FNAME4);
-	if( res < 0 )
-		TestFailed("Open failed %d.", res);
+	err = f1.open( "tmp1", File::OF_CREATE | File::OF_RDWR );
 
-	res = f1.write(buf, BUF_SIZE);
-	if( res < 1 )
-		TestFailed("Write failed.");
+	if( err != kNoError )
+		TestFailed( "Failed to create file. \"%s\"", getErrorString( err ) );
 
-	char dumpbuf[BUF_SIZE];
-	fill(dumpbuf, dumpbuf + BUF_SIZE, 0);
-	f1.setPos(0);
-	res = f1.read(dumpbuf, BUF_SIZE);
-	if( res < 1 && (! equal(buf, buf + BUF_SIZE, dumpbuf) ) )
-		TestFailed("Read failed.");
-
-
-}
-
-
-// We have made FileTest into a Selector listener.  All it does
-// is copy incoming data into a new file.
-void FileTest::processFileEvents(int fd, short events, uint32_t pdata)
-{
-	char buf[BUF_SIZE + 1];
-	fill(buf, buf + BUF_SIZE + 1, 0);
-	static uint bytes_total = 0;
-
-	if( POLLIN & events )
-	{
-		uint bytes = 0;
-		if( ioctl(fd, FIONREAD, &bytes) == 0 )
-		{
-			// Is there data to read?
-			if( bytes > bytes_total )
-			{
-				bytes_total += bytes;
-				uint amntRead = 0;
-				do {
-					
-					int temp = ::read(fd, buf, BUF_SIZE);
-					amntRead += temp;
-					int res = ::write(dumpfile, buf, temp);
-					if (res != temp)
-						cerr << buf << endl;
-				} while( (amntRead > 0) && (amntRead < bytes)  );
-			}
-			
-
-		}
-		if( events & POLLHUP)
-			;//	cerr <<" here" << endl;
-		
-
-	}
-
-}
-
-// Use setSelector
-void FileTest::Test3()
-{
-	File f1;
-	Selector s;
+	if ( fillFile( f1 ) == false )
+		TestFailed( "Failed to fill new file" );
 	
-	char buf[BUF_SIZE];
-	fill(buf, buf + BUF_SIZE, 'B');
-
-	f1.open(FNAME5);
-	f1.setSelector(this, &s);
-
-	// For some reason this write isn't causing the SelectorLisener to
-	// fire.
-	//f1.write(buf, BUF_SIZE);
-
-	// If you increase the sleep time, you can manually append to
-	// FNAME5 and the sellector will append it to FNAME6
-	// I tried to test this above but it didn't work when writting through
-	// f1.
+	f1.setPos( 0 );
 	
-	int sleep_time = 1;
-	do {
-		sleep_time = sleep(sleep_time);
-	} while(sleep_time);
+	if ( validateFile( f1 ) == false )
+		TestFailed( "Failed to validate new file" );
 
-
-	// Check to see if FNAME5 and FNAME6 are the same.
-
-	struct stat64 fstatus;
-	fstat64(dumpfile, &fstatus);
-	int f6size = fstatus.st_size;
-	int f5size = f1.getLength();
+	f1.close();
 	
-	if( f5size != f6size )
-		TestFailed("Something went wrong wtih Selector.");
-	
+	err = f1.open( "tmp1" );
 
-	char buf5[f5size];
-	f1.read(buf5, f5size);
-	char buf6[f6size];
-	
+	if( err != kNoError )
+		TestFailed( "Failed to create file. \"%s\"", getErrorString( err ) );
 
-	if(	! equal(buf5, buf5 + f5size, buf6) )
-		TestFailed("Something went wrong with selector.");
+	if ( validateFile( f1 ) == false )
+		TestFailed( "Failed to validate re-opened file" );
+	
+	if ( f1.getLength() != 6 * 256 )
+		TestFailed( "Failed to validate length" );
 
 	f1.close();
 
+	err = f1.open( "tmp1", File::OF_TRUNC | File::OF_WRITE );
+
+	if( err != kNoError )
+		TestFailed( "Failed to create file. \"%s\"", getErrorString( err ) );
+
+	if ( f1.getLength() != 0 )
+		TestFailed( "Failed to validate length of truncated file" );
+
+	if ( fillFile( f1 ) == false )
+		TestFailed( "Failed to fill file" );
+	
+	f1.close();
+
+	err = f1.open( "tmp1", File::OF_APPEND | File::OF_WRITE );
+
+	if( err != kNoError )
+		TestFailed( "Failed to create file. \"%s\"", getErrorString( err ) );
+
+	if ( f1.getLength() != 6 * 256 )
+		TestFailed( "Failed to validate length of truncated file" );
+
+	if ( fillFile( f1 ) == false )
+		TestFailed( "Failed to fill file" );
+
+	if ( f1.getLength() != 2 * 6 * 256 )
+		TestFailed( "Failed to validate length of truncated file" );
+		
+	f1.close();
 }
+
+
+// read/write
+void FileTest::Test2()
+{
+	File f;
+	char buffer[ 100 ];
+	
+	// ensure that p does not exist.
+	Path p( "tmp2" );
+	p.touch();
+	
+	// check that write fails on a read only file
+	ErrCode err = f.open( p, File::OF_READ );
+
+	if( err != kNoError )
+		TestFailed( "Failed to open file. \"%s\"", getErrorString( err ) );
+
+	int res = f.write( buffer, 100 );
+	
+	if ( res != -1 )
+		TestFailed( "write on read only succeeded %d", res );
+
+	f.close();
+
+	// check that read fails on a write only file
+	err = f.open( p, File::OF_WRITE );
+
+	if( err != kNoError )
+		TestFailed( "Failed to open file. \"%s\"", getErrorString( err ) );
+
+	res = f.read( buffer, 100 );
+	
+	if ( res != -1 )
+		TestFailed( "read on write only succeeded %d", res );
+
+	f.close();	
+
+	// make some data to write/read
+	for ( int i = 0; i < 100; i++ )
+	{
+		buffer[ i ] = 'a' + ( i % 26 );
+	}
+	
+	err = f.open( p, File::OF_WRITE );
+
+	if( err != kNoError )
+		TestFailed( "Failed to open file. \"%s\"", getErrorString( err ) );
+
+	// write the test data
+	res = f.write( buffer, 100 );
+	
+	if ( res == -1 )
+		TestFailed( "write on write only failed %d", res );
+
+	f.close();	
+
+	// clear the buffer 
+	memset( buffer, 0, 100 );
+	
+	err = f.open( p, File::OF_READ );
+
+	if( err != kNoError )
+		TestFailed( "Failed to open file. \"%s\"", getErrorString( err ) );
+
+	// read the a-z data
+	res = f.read( buffer, 100 );
+	
+	if ( res == -1 )
+		TestFailed( "read on read only failed %d", res );
+
+	f.close();	
+
+	// validate the read data.
+	for ( int i = 0; i < 100; i++ )
+	{
+		if ( buffer[ i ] != 'a' + ( i % 26 ) )
+			TestFailed( "Failed to valudate buffer from read" );
+	}
+
+	// this should fail since the file is closed. 
+	res = f.read( buffer, 100 );
+
+	if ( res != -1 )
+		TestFailed( "read didn't fail on closed file" );
+
+	res = f.write( buffer, 100 );
+
+	if ( res != -1 )
+		TestFailed( "write didn't fail on closed file" );
+}
+
+
+// position
+void FileTest::Test3()
+{
+	char buffer[ 100 ];
+	char buffer2[ 100 ];
+	Path p( "tmp3" );
+	p.touch();
+	int start_pos[] = { 200, 400, 512, 634, 789 };
+	int length[] = { 100, 76, 88, 100, 11 };
+	
+	// make a buffer for a-z over and over.
+	for ( int i = 0; i < 100; i++ )
+	{
+		buffer[ i ] = 'a' + ( i % 26 );
+	}
+
+	File f;
+	
+	f.open( p, File::OF_WRITE );
+
+	// fill the file with 1536 bytes of data.	
+	fillFile( f );
+
+	// add our a-z data at various location and lengths, validate the offset
+	//  after writes also.
+	for ( int i = 0; i < JH_ARRAY_SIZE( start_pos ); i++ )
+	{
+		f.setPos( start_pos[ i ] );
+
+		int res = f.write( buffer, length[ i ] );
+	
+		if ( res != length[ i ] )
+			TestFailed( "Failed to write" );
+		
+		if ( f.getPos() != start_pos[ i ] + length[ i ] )
+			TestFailed( "GetPos does not match %d", i );
+	}
+	
+	f.close();
+	
+	f.open( p, File::OF_READ );
+
+	// now validate that with the re-opened file we can read the a-z data 
+	//  at locations.
+	for ( int i = 0; i < JH_ARRAY_SIZE( start_pos ); i++ )
+	{
+		f.setPos( start_pos[ i ] );
+
+		memset( buffer2, 0, 100 );
+		
+		int res = f.read( buffer2, length[ i ] );
+	
+		if ( res != length[ i ] )
+			TestFailed( "Failed to write" );
+		
+		if ( memcmp( buffer2, buffer, length[ i ] ) != 0 )
+			TestFailed( "Buffer failed to match %d", i );
+
+		if ( f.getPos() != start_pos[ i ] + length[ i ] )
+			TestFailed( "GetPos does not match %d", i );
+	}
+
+	f.close();	
+
+	File f2;
+	
+	f2.open( p, File::OF_READ );
+
+	// some tests of seekEnd	
+	if ( f2.seekEnd() != f2.getLength() )
+		TestFailed( "SeekEnd not right" );
+	
+	if ( f2.getPos() != f2.getLength() )
+		TestFailed( "GetPos after SeekEnd not right" );
+
+	// just make sure this work with a new File object also.
+	for ( int i = 0; i < JH_ARRAY_SIZE( start_pos ); i++ )
+	{
+		f2.setPos( start_pos[ i ] );
+
+		memset( buffer2, 0, 100 );
+		
+		int res = f2.read( buffer2, length[ i ] );
+	
+		if ( res != length[ i ] )
+			TestFailed( "Failed to write" );
+		
+		if ( memcmp( buffer2, buffer, length[ i ] ) != 0 )
+			TestFailed( "Buffer failed to match %d", i );
+
+		if ( f2.getPos() != start_pos[ i ] + length[ i ] )
+			TestFailed( "GetPos does not match %d", i );
+	}
+
+	f2.close();	
+	
+	int res = f.getPos();
+
+	if ( res != (jh_off64_t)-1 )
+		TestFailed( "getPos didn't fail on closed file" );
+}
+
+// mmap
+void FileTest::Test4()
+{
+	Path p( "tmp4" );
+	p.touch();
+	File f;
+	
+	f.open( p, File::OF_WRITE );
+
+	// fill the file with 1536 bytes of data.	
+	fillFile( f );
+
+	f.close();
+	
+	f.open( p, File::OF_RDWR );
+
+	uint8_t *file_data = f.mmap();
+	
+	if ( file_data == NULL )
+		TestFailed( "Failed to map file" );
+		
+	if ( f.getLength() != 1536 )
+		TestFailed( "file incorrect length" );
+		
+	for ( int i = 0; i < 6; i++ )
+	{
+		if ( file_data[ i * 256 ] != i )
+			TestFailed( "Failed to validate file data with mmap" );
+
+		LOG_INFO( "byte one good" );
+		
+		for ( int j = 1; j < 256; j++ )
+		{
+			if ( file_data[ ( i * 256 ) + j ] != j )
+			{
+				LOG_INFO( "Failed at byte %d", j );
+				TestFailed( "Failed to validate file data with mmap" );
+			}
+		}
+	}
+	
+	file_data[ 100 ] = 5;
+	
+	f.msync();
+
+	File f2;
+	f2.open( p );
+	
+	if ( validateFile( f2 ) )
+		TestFailed( "mmap modified file not changed on disk" );
+	
+	f2.close();
+	
+	f.munmap();
+	f.close();
+
+	file_data = f.mmap();
+	
+	if ( file_data != NULL )
+		TestFailed( "Calling mmap on closed file worked..." );
+}
+
+// pipe/selector
+void FileTest::Test5()
+{
+	File *pipe_files[ 2 ];
+	Selector s;
+	const char buffer[] = "Hello World";
+	
+	File::pipe( pipe_files );
+	
+	pipe_files[ File::PIPE_READER ]->setSelector( (FileListener*)this, &s );
+
+	int length = strlen( buffer );
+	
+	int res = pipe_files[ File::PIPE_WRITER ]->write( buffer, length );
+	
+	if ( res != length )
+		TestFailed( "Failed to write pipe %d", res );
+	
+}
+
+void FileTest::handleData( File *f, short events )
+{
+	char buffer[ 32 ];
+	
+	int res = f->read( buffer, 32 );
+	
+	if ( res != 11 )
+		TestFailed( "Failed to read correct amount of data" );
+	
+	buffer[ res ] = '\0';
+	
+	if ( strcmp( buffer, "Hello World" ) != 0 )
+		TestFailed( "String read not correct \"%s\"", buffer );
+}
+
+// Test JetHead Error Codes, this should be somewhere more generic...
+void FileTest::Test6()
+{
+	const char *str = NULL;
+	
+	for ( int i = 0; i < kMaxErrorString; i++ )
+	{
+		str = getErrorString( (ErrCode)i );
+		if ( str == NULL )
+			TestFailed( "Failed to get error string for error code %d", i );
+	}
+	
+	if ( getErrorString( kMaxErrorString ) != NULL )
+		TestFailed( "Failed to get NULL for out of range error code %d", kMaxErrorString );
+		
+	if ( getErrorString( (ErrCode)-1 ) != NULL )
+		TestFailed( "Failed to get NULL for out of range error code %d", -1 );
+}
+
+
+static const int gNumberTests = 6;
 
 int main( int argc, char* argv[] )
 {
-
-
 	TestRunner runner( argv[ 0 ] );
-	TestCase *test_set[ 10 ];
-	test_set[ 0 ] = jh_new FileTest( 1 );
-	test_set[ 1 ] = jh_new FileTest( 2 );
-	test_set[ 2 ] = jh_new FileTest( 3 );
 
-   
-	runner.RunAll( test_set, 3 );
+	TestCase *test_set[ gNumberTests ];
 
+	for ( int i = 0; i < gNumberTests; i++ )
+	{
+		test_set[ i ] = jh_new FileTest( i + 1 );
+	}
+	
+	runner.RunAll( test_set, gNumberTests );
 	
 	return 0;
 }

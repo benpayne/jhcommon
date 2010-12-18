@@ -53,7 +53,7 @@ public:
 	 * addListener.
 	 */
 	virtual void processFileEvents( int fd, short events, 
-									uint32_t private_data ) = 0;
+									jh_ptr_int_t private_data ) = 0;
 protected:
 	//! Virtual destructor, does nothing, just for compile warning
 	virtual ~SelectorListener() {}
@@ -115,7 +115,7 @@ public:
 	 *  the listener is informed of an event.
 	 */
 	void addListener( int fd, short events, 
-					  SelectorListener *listener, uint32_t private_data = 0 );
+					  SelectorListener *listener, jh_ptr_int_t private_data = 0 );
 
 	/** 
 	 * Remove a listener(s) previously added.  We remove any matches
@@ -163,7 +163,7 @@ private:
 		SelectorListener *mListener;
 
 		//! Some opaque private data that is passed back to the listener
-		uint32_t mPrivateData;
+		jh_ptr_int_t mPrivateData;
 	};
 	
 	enum {

@@ -29,9 +29,10 @@
 #define JH_TEST_CASE_H_
 
 #include "Thread.h"
-#include <string>
+#include "Mutex.h"
 #include <stdlib.h>
-#include <stdarg.h>
+#include <cstdarg>
+#include "jh_string.h"
 
 #define TestFailed( str... ) TestFailedInternal( __FILE__, __LINE__, ## str )
 
@@ -69,6 +70,13 @@ public:
 			return false;
 		}
 
+		if ( mTestPassed )
+			printf( " PASSED\n" );
+		else
+		{
+			printf( " FAILED at %s:%d\n", mFilename.c_str(), mLineNumber );
+			printf( "%s\n", mErrorString.c_str() );
+		}
 		// return test status.
 		return mTestPassed;
 	}
@@ -86,24 +94,47 @@ protected:
 
 	void TestPassed()
 	{
-		printf( " PASSED\n" );
-		mTestComplete = true;
-		mTestPassed = true;
+		mMutex.Lock();
+		
+		if ( mTestComplete )
+		{
+			if ( mTestPassed )
+				printf( " BAD TEST CASE, TestPassed called twice\n" );
+
+			mTestPassed = false;
+		}
+		else
+		{
+			mTestComplete = true;
+			mTestPassed = true;
+		}
+		mMutex.Unlock();
 	}
 	
-	void TestFailedInternal( const char *filename, int line_num, const char *fmt, ... )
+	void TestFailedInternal( const char *filename, int line_num, const char *fmt, ... ) __attribute__ ((__format__ (__printf__, 4, 5)))
 	{
 		va_list params;
 
-		va_start(params, fmt);
+		mMutex.Lock();
+
+		mFilename = filename;
+		mLineNumber = line_num;
 		
-		printf( " FAILED at %s:%d\n", filename, line_num );
-		vprintf( fmt, params );
-		printf( "\n" );
-		// when Test Fails we exit the thread.
+		va_start( params, fmt );
+		JetHead::stl_vsprintf( mErrorString, fmt, params );
+		va_end( params );
+
+		if ( mTestComplete )
+			printf( " BAD TEST CASE, TestPassed/TestFailed already called\n" );
+
 		mTestComplete = true;
 		mTestPassed = false;
-		Thread::Exit();
+		mMutex.Unlock();
+		
+		if ( *(Thread::GetCurrent()) == mThread )
+			Thread::Exit();
+		else
+			mThread.Stop();
 	}
 		
 	virtual void Run() = 0;
@@ -113,6 +144,10 @@ private:
 	bool		mTestPassed;
 	std::string	mTestName;
 	Runnable<TestCase>	mThread;
+	Mutex		mMutex;
+	JHSTD::string mFilename;
+	int			mLineNumber;
+	JHSTD::string mErrorString;
 };
 
 class TestRunner

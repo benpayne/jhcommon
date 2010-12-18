@@ -31,57 +31,60 @@
 
 #include "IReaderWriter.h"
 
-/**
- *	@brief Simple ReaderWriter to wrap a file descriptor
- *
- * This object provides the IReaderWriter interface on a simple
- *  linux file descriptor.  In most cases your better of using on of
- *  jhcommons other IReaderWriter implemtor classes like File, or Socket.
- *  but if you have some other type of RD or just have to open something
- *  yourself this will allow you to use the other jhcommon constructs.
- *  Be aware that the fd is not closed bt this class automatically at 
- *  descruction, you are responsible for ensuring that some closes the FD.
- */
-class FdReaderWriter : public IReaderWriter
+namespace JetHead
 {
-public:
-	FdReaderWriter( int fd );
-	virtual ~FdReaderWriter();
-
 	/**
-	 * Set a selector and start listening for file events on this fd.
-	 *  This will listen for POLLIN, if you want other event see overloaded 
-	 *  version below.
+	 *	@brief Simple ReaderWriter to wrap a file descriptor
+	 *
+	 * This object provides the IReaderWriter interface on a simple
+	 *  linux file descriptor.  In most cases your better of using on of
+	 *  jhcommons other IReaderWriter implemtor classes like File, or Socket.
+	 *  but if you have some other type of RD or just have to open something
+	 *  yourself this will allow you to use the other jhcommon constructs.
+	 *  Be aware that the fd is not closed bt this class automatically at 
+	 *  descruction, you are responsible for ensuring that some closes the FD.
 	 */
-	void setSelector( SelectorListener *listener, Selector *selector );
-
-	/**
-	 * Set a selector and start listening for file events on this fd.
-	 *  This will listen for whatever you specify in events.  This should
-	 *  be valid value for the poll system call.  This include POLLIN, 
-	 *  POLLOUT, etc...
-	 */
-	void setSelector( SelectorListener *listener, Selector *selector, short events );
-
-	/**
-	 * Read bytes from the fd
-	 */
-	int read( void *buffer, int length );
+	class FdReaderWriter : public IReaderWriter
+	{
+	public:
+		FdReaderWriter( int fd );
+		virtual ~FdReaderWriter();
 	
-	/**
-	 * Write bytes to the fd
-	 */
-	int write( const void *buffer, int length );
-
-	/**
-	 * Close the fd, note that when this class is destroyed it will NOT
-	 *  close the fd, you must do that yourself.
-	 */
-	int close();
+		/**
+		 * Set a selector and start listening for file events on this fd.
+		 *  This will listen for POLLIN, if you want other event see overloaded 
+		 *  version below.
+		 */
+		void setSelector( SelectorListener *listener, Selector *selector );
 	
-private:
-	int		mFd;
-	Selector *mSelector;
+		/**
+		 * Set a selector and start listening for file events on this fd.
+		 *  This will listen for whatever you specify in events.  This should
+		 *  be valid value for the poll system call.  This include POLLIN, 
+		 *  POLLOUT, etc...
+		 */
+		void setSelector( SelectorListener *listener, Selector *selector, short events );
+	
+		/**
+		 * Read bytes from the fd
+		 */
+		int read( void *buffer, int length );
+		
+		/**
+		 * Write bytes to the fd
+		 */
+		int write( const void *buffer, int length );
+	
+		/**
+		 * Close the fd, note that when this class is destroyed it will NOT
+		 *  close the fd, you must do that yourself.
+		 */
+		 JetHead::ErrCode close();
+		
+	private:
+		int		mFd;
+		Selector *mSelector;
+	};
 };
 
 #endif // JH_FDREADERWRITER_H_

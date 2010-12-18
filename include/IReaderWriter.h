@@ -29,80 +29,83 @@
 #define JH_IREADERWRITER_H_
 
 #include "Selector.h"
+#include "JetHead.h"
 #include "jh_types.h"
 
-/**
- * @brief A Generic interface to reading and writing to file like things.  
- * 
- *
- */
-class IReaderWriter
+namespace JetHead
 {
-public:
-	virtual ~IReaderWriter() {}
-	
-	virtual void setSelector(SelectorListener *listener, Selector *selector) = 0;
-	virtual int read(void *buffer, int length) = 0;
-	virtual int write(const void *buffer, int length) = 0;
-	virtual int close() = 0;
-	
 	/**
-	 *	@brief writeAll helper method
+	 * @brief A Generic interface to reading and writing to file like things.  
+	 * 
 	 *
-	 *	This helper method can be called to write all the bytes specified.
-	 *	Unlike the normal write method which can return a positive value
-	 *	less than length, this method will make sure that all of the bytes
-	 *	are written, only returning when that is complete, or an error is
-	 *	encountered.
 	 */
-	virtual int writeAll(const void *buffer, int length)
+	class IReaderWriter
 	{
-		int bytesWritten = 0;
+	public:
+		virtual ~IReaderWriter() {}
 		
-		while (bytesWritten < length)
+		virtual int read(void *buffer, int length) = 0;
+		virtual int write(const void *buffer, int length) = 0;
+		virtual ErrCode close() = 0;
+		
+		/**
+		 *	@brief writeAll helper method
+		 *
+		 *	This helper method can be called to write all the bytes specified.
+		 *	Unlike the normal write method which can return a positive value
+		 *	less than length, this method will make sure that all of the bytes
+		 *	are written, only returning when that is complete, or an error is
+		 *	encountered.
+		 */
+		virtual int writeAll(const void *buffer, int length)
 		{
-			int result = write((uint8_t*)buffer + bytesWritten,
-							   length - bytesWritten);
-			if (result < 0)
-				return result;
-
-			bytesWritten += result;
-		}
-		return bytesWritten;
-	}
+			int bytesWritten = 0;
+			
+			while (bytesWritten < length)
+			{
+				int result = write((uint8_t*)buffer + bytesWritten,
+								   length - bytesWritten);
+				if (result < 0)
+					return result;
 	
-	/**
-	 *	@brief readAll helper method
-	 *
-	 *	This helper method can be called to read all the bytes
-	 *	specified.  Unlike the normal read method which can return a
-	 *	postive value less than the length specified (without reaching
-	 *	EOF), this method will make sure to read all of the bytes
-	 *	requested (up to EOF), only returning when that is completed
-	 *	or an error is encountered or EOF is reached.
-	 *  
-	 *  @return length on success, < 0 on failure, and between 0 and
-	 *  length on EOF assuming that any bytes were read before EOF
-	 */
-	virtual int readAll(void *buffer, int length)
-	{
-		int bytesRead = 0;
-		
-		while (bytesRead < length)
-		{
-			int result = read((uint8_t*)buffer + bytesRead,
-							  length - bytesRead);
-			
-			if (result < 0)
-				return result;
-			
-			if (result == 0)
-				return bytesRead;
-			
-			bytesRead += result;
+				bytesWritten += result;
+			}
+			return bytesWritten;
 		}
-		return bytesRead;
-	}
-};
+		
+		/**
+		 *	@brief readAll helper method
+		 *
+		 *	This helper method can be called to read all the bytes
+		 *	specified.  Unlike the normal read method which can return a
+		 *	postive value less than the length specified (without reaching
+		 *	EOF), this method will make sure to read all of the bytes
+		 *	requested (up to EOF), only returning when that is completed
+		 *	or an error is encountered or EOF is reached.
+		 *  
+		 *  @return length on success, < 0 on failure, and between 0 and
+		 *  length on EOF assuming that any bytes were read before EOF
+		 */
+		virtual int readAll(void *buffer, int length)
+		{
+			int bytesRead = 0;
+			
+			while (bytesRead < length)
+			{
+				int result = read((uint8_t*)buffer + bytesRead,
+								  length - bytesRead);
+				
+				if (result < 0)
+					return result;
+				
+				if (result == 0)
+					return bytesRead;
+				
+				bytesRead += result;
+			}
+			return bytesRead;
+		}
+	};
+}; // namespace JetHead
 
 #endif // JH_IREADERWRITER_H_

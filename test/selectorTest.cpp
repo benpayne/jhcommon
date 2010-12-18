@@ -244,7 +244,7 @@ private:
 	int mEventCount;	
 
 	void SendData();
-	void processFileEvents( int fd, short events, uint32_t private_data );
+	void processFileEvents( int fd, short events, jh_ptr_int_t private_data );
 	
 	void Run()
 	{
@@ -284,7 +284,7 @@ public:
 		mFd( fd ), mPrivateData( pd ), mTestCase( testCase ) {}
 	virtual ~OtherListenerClass() {}
 	
-	void processFileEvents( int fd, short events, uint32_t private_data );
+	void processFileEvents( int fd, short events, jh_ptr_int_t private_data );
 
 private:
 	int mFd;
@@ -322,7 +322,7 @@ void SelectorTest::SendData()
 	write( mPipe[ 1 ], "FOOBAR", 6 );	
 }
 
-void SelectorTest::processFileEvents( int fd, short events, uint32_t private_data )
+void SelectorTest::processFileEvents( int fd, short events, jh_ptr_int_t private_data )
 {
 	TRACE_BEGIN( LOG_LVL_INFO );
 	uint8_t buffer[ 10 ];
@@ -351,7 +351,7 @@ void SelectorTest::processFileEvents( int fd, short events, uint32_t private_dat
 	}
 }
 
-void OtherListenerClass::processFileEvents( int fd, short events, uint32_t private_data )
+void OtherListenerClass::processFileEvents( int fd, short events, jh_ptr_int_t private_data )
 {
 	TRACE_BEGIN( LOG_LVL_INFO );
 	

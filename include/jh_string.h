@@ -35,6 +35,8 @@
 #include <string.h>
 #include "RefCount.h"
 
+#include <cstdarg>
+
 #ifdef USE_JETHEAD_STRING
 #define JHSTD	JetHead
 #else
@@ -43,9 +45,13 @@
 #endif
 
 #include "jh_memory.h"
+#include "jh_vector.h"
+
 
 namespace JetHead
 {
+
+#ifdef USE_JETHEAD_STRING
 	template <class charT>
 	class basic_string
 	{
@@ -774,7 +780,132 @@ namespace JetHead
 	}
 
 	typedef basic_string<char> string;
-	typedef basic_string<short> wstring;	
+	typedef basic_string<short> wstring;		
+#endif // USE_JETHEAD_STRING
+
+	/** 
+	 * split - split the contents of str into pieces seperated by 1 or more 
+	 *  charaters found in the split_chars string.  if split char is " \t", then
+	 *  parts will be a set of strings found in str that are seperated by one
+	 *  or more space or tab charaters.
+	 */
+
+	template <class _string>
+	int	split( const _string &str, const _string &split_chars, JetHead::vector<_string> &parts )
+	{
+		return split( str, split_chars.c_str(), parts );
+	}
+	
+	template <class _string>
+	int	split( const _string &str, const char *split_chars, JetHead::vector<_string> &parts )
+	{
+		unsigned pos = str.find_first_of( split_chars );
+		unsigned start = 0;
+		
+		while ( pos != _string::npos )
+		{
+			parts.push_back( str.substr( start, pos - start ) );
+			
+			start = pos + 1;
+			pos = str.find_first_of( split_chars, start );
+			
+			// if next char is also in split_chars, then search until we find a 
+			//  char that is not.
+			while( pos == start )
+			{
+				start = pos + 1;
+				pos = str.find_first_of( split_chars, start );
+			}
+		}
+		
+		parts.push_back( str.substr( start, pos - start ) );
+		
+		return parts.size();
+	}
+
+	//
+	// GENERAL PURPOSE STRING HELPERS
+	// 
+	//  these are always enablabed and will work with STL or JetHead's string
+	//   class.
+	
+	/** 
+	 * strtol - wrapper to convert a string into a number.
+	 *
+	 * @param str the STL type string to operate on
+	 * @param base the base of the number to convert, 10, 16, 8, 2, 0 are valid
+	 *  zero means the routine will auto detect.
+	 * @return the number found in the string.
+	 */
+	template <class _string>
+	long	strtol( const _string &str, unsigned base = 0 )
+	{
+		return ::strtol( str.c_str(), NULL, base );
+	}
+
+	/** 
+	 * strtol - wrapper to convert a string into a number.  with an offset in 
+	 *  the string to the start of the number.
+	 *
+	 * @param pos offset in string to the start of the number
+	 * @param str the STL type string to operate on
+	 * @param base the base of the number to convert, 10, 16, 8, 2, 0 are valid
+	 *  zero means the routine will auto detect.
+	 * @return the number found in the string.
+	 */
+	template <class _string>
+	long	strtol( unsigned pos, const _string &str, unsigned base = 0 )
+	{
+		return ::strtol( str.c_str() + pos, NULL, base );
+	}
+
+	/** 
+	 * strtol - wrapper to convert a string into a number and get the number of 
+	 *  bytes converted.  
+	 *
+	 * @param pos offset in string to the start of the number
+	 * @param str the STL type string to operate on
+	 * @param base the base of the number to convert, 10, 16, 8, 2, 0 are valid
+	 *  zero means the routine will auto detect.
+	 * @param end_pos the first non-matching character in the string.
+	 * @return the number found in the string.
+	 */
+	template <class _string>
+	long	strtol( unsigned pos, const _string &str, unsigned base, unsigned &end_pos )
+	{
+		char *end_ptr = NULL;
+		long res = ::strtol( str.c_str() + pos, &end_ptr, base );
+		end_pos = end_ptr - str.c_str();
+		return res;
+	}
+	
+	template <class _string>
+	int		stl_sprintf( _string &str, const char *format, ... ) __attribute__ ((__format__ (__printf__, 2, 3)));
+
+	template <class _string>
+	int		stl_sprintf( _string &str, const char *format, ... )
+	{
+		va_list params;
+		va_start( params, format );
+		int size = ::vsnprintf( NULL, 0, format, params );
+		va_end( params );
+		str.resize( size );
+		va_start( params, format );
+		return ::vsprintf( (char*)str.c_str(), format, params );		
+		va_end( params );
+	}
+
+	template <class _string>
+	int		stl_vsprintf( _string &str, const char *format, va_list params )
+	{
+		va_list p2;
+		va_copy( p2, params );
+		int size = ::vsnprintf( NULL, 0, format, params );
+		str.resize( size );
+		return ::vsprintf( (char*)str.c_str(), format, p2 );
+		va_end( p2 );
+	}
 };
+
 
 #endif // JH_STRING_H

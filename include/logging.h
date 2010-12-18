@@ -26,7 +26,7 @@
  */
 
 /**
- * @file jhcommon/kernel/include/logging.h
+ * @file jhcommon/include/logging.h
  * @brief Ben, please provide a description here.
  *
  * @author Ben Payne

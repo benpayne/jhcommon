@@ -67,6 +67,7 @@ ErrorCode ComponentManager::LoadLibrary( const char *name )
 
 	LOG_NOTICE( "Opening Library: %s", name );
 	
+	ErrorCode (*LoadLibrary)( IComponentManager *mgr );
 	ErrorCode (*RegisterServices)( IComponentManager *mgr );
 	void *handle = dlopen( name, RTLD_LAZY );
 	
@@ -77,17 +78,22 @@ ErrorCode ComponentManager::LoadLibrary( const char *name )
 	}
 	else
 	{
-		RegisterServices = (ErrorCode (*)(IComponentManager *mgr))dlsym( handle, "JHCOM_LibraryEntry" );
+		LoadLibrary = (ErrorCode (*)(IComponentManager *mgr))dlsym( handle, "JHCOM_LibraryEntry" );
+		RegisterServices = (ErrorCode (*)(IComponentManager *mgr))dlsym( handle, "JHCOM_RegisterServices" );
 
-		if ( RegisterServices == NULL )
+		if ( RegisterServices == NULL || LoadLibrary == NULL )
 		{
 			result = kLoadFailed;
 			LOG_WARN( "Failed to get symbol" );
 		}
 		else
 		{
-			LOG( "Symbol is %p", RegisterServices );
-			result = RegisterServices( this );
+			LOG( "LoadLibrary is %p", LoadLibrary );
+			LOG( "RegisterServices is %p", RegisterServices );
+			result = LoadLibrary( this );
+			
+			if ( result == kNoError )
+				result = RegisterServices( this );
 		}
 	}
 		
@@ -184,10 +190,20 @@ bool JHCOM::ComId::operator==( const ComId &other ) const
 
 static IComponentManager *gManager = NULL;
 
+static bool gMaster = false;
+
+/*
+ * If someone calls getComponentManager and one does not exist then this 
+ *  component is assumed to be the master for the process.  
+ */ 
 IComponentManager *JHCOM::getComponentManager()
 {
 	if ( gManager == NULL )
+	{
+		gMaster = true;
 		gManager = jh_new ComponentManager;
+	}
+	
 	return gManager;
 }
 
@@ -198,3 +214,14 @@ void JHCOM::destroyComponentManager()
 		gManager->Release();
 }
 
+extern "C" ErrorCode JHCOM_LibraryEntry( IComponentManager *mgr )
+{
+	TRACE_BEGIN( LOG_LVL_NOTICE );
+	
+	if ( gMaster )
+		LOG_ERR_FATAL( "Called on master" );
+	
+	gManager = mgr;
+	
+	return kNoError;
+}

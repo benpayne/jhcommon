@@ -40,6 +40,8 @@ SET_LOG_LEVEL(LOG_LVL_NOTICE);
 
 #define COMMAND_PROMT " > "
 
+using namespace JetHead;
+
 class ICommandHandler
 {
 public:

@@ -41,7 +41,7 @@ public:
 
 	const char *getResponseString() const;
 
-	int parseFirstLine( const CircularBuffer &buf );
+	int parseFirstLine( const JetHead::CircularBuffer &buf );
 	
 private:
 	int buildFirstLine() const;

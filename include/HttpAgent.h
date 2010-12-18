@@ -42,7 +42,7 @@ public:
 	BodyHandler() : mStop( false ) {} 
 	virtual ~BodyHandler() {}
 	virtual void handleData( const char *buf, int len ) = 0;
-	virtual int handleSocket( Socket &sock, int len ) = 0;
+	virtual int handleSocket( JetHead::Socket &sock, int len ) = 0;
 	virtual void setStop( bool stop ) { mStop = stop; }
 	
 protected:
@@ -54,7 +54,7 @@ protected:
 class FileBodyHandler : public BodyHandler
 {
 public:
-	FileBodyHandler( File &f ) : mFile( f ) {}
+	FileBodyHandler( JetHead::File &f ) : mFile( f ) {}
 	virtual ~FileBodyHandler() {}
 	
 	void handleData( const char *buf, int len )
@@ -62,7 +62,7 @@ public:
 		mFile.write( buf, len );
 	}
 	
-	int handleSocket( Socket &sock, int len )
+	int handleSocket( JetHead::Socket &sock, int len )
 	{
 		char buf[TEST_BUFFER_SIZE];
 		int total_read = 0;
@@ -93,7 +93,7 @@ public:
 	}
 	
 private:
-	File &mFile;
+	JetHead::File &mFile;
 };
 
 class HttpAgent
@@ -112,8 +112,8 @@ protected:
 	static const int kMaxMessageSize = 2048;
 	
 private:
-	CircularBuffer	mBuffer;
-	Socket			mSock;
+	JetHead::CircularBuffer	mBuffer;
+	JetHead::Socket			mSock;
 };
 
 

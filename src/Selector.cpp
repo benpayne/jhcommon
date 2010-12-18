@@ -97,7 +97,7 @@ void Selector::shutdown()
 	}
 }
 
-void Selector::addListener( int fd, short events, SelectorListener *listener, uint32_t private_data )
+void Selector::addListener( int fd, short events, SelectorListener *listener, unsigned long private_data )
 {
 	TRACE_BEGIN( LOG_LVL_INFO );
 

@@ -37,6 +37,8 @@
 SET_LOG_CAT( LOG_CAT_ALL );
 SET_LOG_LEVEL( LOG_LVL_NOTICE );
 
+using namespace JetHead;
+
 CircularBuffer::CircularBuffer( uint8_t *buffer, int buf_size )
 	: mLock( true ), mFreeBuffer( false )
 {
@@ -438,6 +440,63 @@ int CircularBuffer::writeByte( uint8_t byte )
 		mWritePtr = mBuffer;
 	
 	mDataCondition.Broadcast();
+
+	return 0;
+}
+
+int CircularBuffer::getLine( JHSTD::string &line, const char *terminal )
+{
+	int res = 0;
+	Lock();
+	res = read( NULL, peekLine( line, terminal ) );
+	Unlock();
+	return res;
+}
+
+int CircularBuffer::peekLine( JHSTD::string &line, const char *terminal )
+{
+	AutoLock lock( mLock );
+	int term_len = strlen( terminal );
+	int state = 0;
+	uint8_t *ptr = mReadPtr;
+	bool found = false;
+	
+	if ( mLen == 0 ) 
+		return 0;
+	
+	do {
+		if ( *ptr == terminal[ state ] )
+			state += 1;
+		else
+			state = 0;
+	
+		if ( state == term_len )
+		{
+			found = true;
+			break;
+		}
+		
+		ptr += 1;
+		if ( ptr == mEnd )
+			ptr = mBuffer;
+	} while( ptr != mWritePtr );
+	
+	if ( found )
+	{
+		// move passed the terminals last char, don't care about wrapping here.
+		ptr += 1;
+
+		// if wrap
+		if ( ptr < mReadPtr )
+		{
+			line.assign( (char*)mReadPtr, mEnd - mReadPtr );
+			line.append( (char*)mBuffer, ptr - mBuffer - term_len );
+		}
+		else
+			line.assign( (char*)mReadPtr, ptr - mReadPtr - term_len );
+
+		return line.length() + term_len;
+	}
 
 	return 0;
 }

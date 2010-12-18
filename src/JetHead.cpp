@@ -26,10 +26,12 @@
  */
 
 #include "JetHead.h"
-#include "logging.h"
+#include "logging.h"	
 
 SET_LOG_CAT( LOG_CAT_ALL );
 SET_LOG_LEVEL( LOG_LVL_INFO );
+
+using namespace JetHead;
 
 static const char *gErrorStrings[] = {
 	"No Error",
@@ -47,20 +49,78 @@ static const char *gErrorStrings[] = {
 	"Resource not initialized",
 	"Read Failed",
 	"Write Failed",
-
+	"Resource Full",
+	"Unknown Error",
+	"Connection Closed",
+	
 	// keep in sync with JetHead.h
 	"Max Error String",
 };
 
-namespace JetHead 
+const char *JetHead::getErrorString( ErrCode err )
 {
-	const char *getErrorString( ErrCode err )
-	{
-		// protect against enum bounds
-		if ( err >= kMaxErrorString )
-			return NULL;
+	// protect against enum bounds
+	if ( (int)err < 0 || (int)err >= kMaxErrorString )
+		return NULL;
 
-		return gErrorStrings[ (int)err ];
+	return gErrorStrings[ (int)err ];
+}
+
+
+JetHead::ErrCode	JetHead::getErrorCode( int _errno )
+{
+	JetHead::ErrCode err = JetHead::kNoError;
+	
+	switch( errno )
+	{
+	case EACCES:
+	case EPERM:
+	case EROFS:
+		err = kPermissionDenied;
+		break;
+	case EEXIST:
+		err = kAlreadyRequested;
+		break;
+	case EISDIR:
+	case ENOTDIR:
+	case EFAULT:
+	case EBADF:
+	case EINVAL:
+		err = kInvalidRequest;
+		break;
+	case EFBIG:
+	case EOVERFLOW:
+		err = kNotImplemented;
+		break;
+	case ENFILE:
+	case EMFILE:
+	case ETXTBSY:
+	case EWOULDBLOCK:
+	//case EAGAIN: same value as EWOULDBLOCK
+		err = kBusy;
+		break;
+	case ENOMEM:
+		err = kTemporarilyBusy;
+		break;
+	case ENOENT:
+	case ENODEV:
+		err = kNotFound;
+		break;
+	case ENXIO:
+		err = kNotInitialized;
+		break;
+	case ENOSPC:
+		err = kFull;
+		break;
+	case EPIPE:
+		err = kConnectionClosed;
+		break;
+	case EIO:
+	default:
+		err = kUnknownError;
+		break;
 	}
-};
+	
+	return err;
+}
 

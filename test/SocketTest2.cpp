@@ -33,6 +33,7 @@
 #include<time.h>
 
 using namespace std;
+using namespace JetHead;
 
 SET_LOG_CAT( LOG_CAT_ALL );
 SET_LOG_LEVEL( LOG_LVL_INFO );

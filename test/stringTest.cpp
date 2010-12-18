@@ -36,15 +36,15 @@ SET_LOG_LEVEL( LOG_LVL_INFO );
 
 #include "TestCase.h"
 
-#define USE_JH_STRING	1
+#define TEST_JH_STRING	1
 
-#ifdef USE_JH_STRING
-#include "jh_string.h"
-using namespace JetHead;
-#else
-#include <string>
-using namespace std;
+#ifdef TEST_JH_STRING
+#define USE_JETHEAD_STRING
 #endif
+
+#include "jh_string.h"
+
+using namespace JHSTD;
 
 class StringTest : public TestCase
 {
@@ -100,9 +100,9 @@ private:
 		case 10:
 			Test11();
 			break;
-//		case 11:
-//			Test12();
-//			break;
+		case 11:
+			Test12();
+			break;
 		default:
 			break;
 		}
@@ -726,9 +726,68 @@ private:
 		
 		TestPassed();
 	}	
+	
+	void Test12()
+	{
+		// JetHead split test
+		JHSTD::string s( "This is a\ttest" );
+		JetHead::vector<JHSTD::string> parts;
+		
+		int res = JetHead::split( s, " \t", parts );
+		
+		if ( res != 4 )
+			TestFailed( "Wrong number of parts found %d expected 4", res );
+		
+		if ( parts[ 0 ] != "This" )
+			TestFailed( "Part wrong" );
+		if ( parts[ 1 ] != "is" )
+			TestFailed( "Part wrong" );
+		if ( parts[ 2 ] != "a" )
+			TestFailed( "Part wrong" );
+		if ( parts[ 3 ] != "test" )
+			TestFailed( "Part wrong" );
+	
+		JHSTD::string s2( "12 1556 abc" );
+
+		long r2 = JetHead::strtol( s2 );
+
+		if ( r2 != 12 )
+			TestFailed( "strtol failed" );
+		
+		unsigned end = 0;
+		
+		r2 = JetHead::strtol( 0, s2, 0, end );
+		
+		if ( r2 != 12 || end != 2 )
+			TestFailed( "strtol failed %d", end );
+
+		r2 = JetHead::strtol( 3, s2, 0, end );
+
+		if ( r2 != 1556 || end != 7 )
+			TestFailed( "strtol failed %d", end );
+
+		r2 = JetHead::strtol( 5, s2, 0, end );
+		
+		if ( r2 != 56 || end != 7 )
+			TestFailed( "strtol failed %d", end );
+
+		r2 = JetHead::strtol( 7, s2, 0, end );
+		
+		if ( r2 != 0 || end != 7 )
+			TestFailed( "strtol failed %d", end );
+
+		JHSTD::string s3;
+		
+		JetHead::stl_sprintf( s3, "Hello World %d", 15 );
+		
+		if ( s3 != "Hello World 15" )
+			TestFailed( "stl_sprintf failed" );
+			
+		TestPassed();
+	}
 };
 
-static const int gNumTests = 11;
+static const int gNumTests = 12;
 
 int main( int argc, char*argv[] )
 {

@@ -28,82 +28,85 @@
 #ifndef JH_MULTICAST_SOCKET_H_
 #define JH_MULTICAST_SOCKET_H_
 
-/**
- * @file 
- *
- * A multicast socket.  Note that multicast implies that this is a UDP
- * (datagram) socket, since it is impossible to have a 2-way
- * stream-oriented connection on a multicast group.
- */ 
+#include "Socket.h"	
 
-#include "Socket.h"
-
-class MulticastSocket : public ServerSocket
+namespace JetHead
 {
- public:
-	//! Create a new multicast socket
-	MulticastSocket();
-
-	//! Destroy the socket, closes and leaves the group if needed
-	~MulticastSocket();
-
 	/**
-	 * @brief Join the group (call this after bind)
+	 * @file 
 	 *
-	 * @note Returns the exit code of the setsockopt call
-	 */
-	int joinGroup(const Socket::Address& addr);
-
-	/**
-	 * @brief Join the group on this interface (call this after bind)
-	 *
-	 * @note Returns the exit code of the setsockopt call
-	 */
-	int joinGroup(const Socket::Address& addr, const Socket::Address& ifAddr);
-
-
-	/**
-	 * @brief Set the TTL on packets you send to this group
-	 *
-	 * @note Returns the exit code of the setsockopt call
-	 */
-	int setTTL(uint8_t ttl);
-
-	/**
-	 * @brief Set whether packets sent from here go to other sockets on this ip
-	 *
-	 * @note Returns the exit code of the setsockopt call
-	 */
-	int setLoopback(bool enable);
-
-	/**
-	 * @brief Set which interface is used for this socket
-	 *
-	 * @note Returns the exit code of the setsockopt call
-	 * @note Packets will go out the interface corresponding to the
-	 * default route unless you say otherwise with this call.
-	 */
-	int setInterface(const Socket::Address& addr);
-
-	//! Set which interface is used for this socket, by name
-	int setInterface(const char* ifName);
-
-	//! Set broadcast
-	int setBroadcast(bool enable);
-
-	/**
-	 * @brief Leave the group (call this after joinGroup)
-	 *
-	 * @note Returns the exit code of the setsockopt call
-	 */
-	int leaveGroup();
- private:
-	//! My group address
-	Socket::Address mAddr;
-
-	//! Are we in the group?
-	bool mInGroup;
-
+	 * A multicast socket.  Note that multicast implies that this is a UDP
+	 * (datagram) socket, since it is impossible to have a 2-way
+	 * stream-oriented connection on a multicast group.
+	 */ 
+	
+	class MulticastSocket : public ServerSocket
+	{
+	 public:
+		//! Create a new multicast socket
+		MulticastSocket();
+	
+		//! Destroy the socket, closes and leaves the group if needed
+		~MulticastSocket();
+	
+		/**
+		 * @brief Join the group (call this after bind)
+		 *
+		 * @note Returns the exit code of the setsockopt call
+		 */
+		int joinGroup(const Socket::Address& addr);
+	
+		/**
+		 * @brief Join the group on this interface (call this after bind)
+		 *
+		 * @note Returns the exit code of the setsockopt call
+		 */
+		int joinGroup(const Socket::Address& addr, const Socket::Address& ifAddr);
+	
+	
+		/**
+		 * @brief Set the TTL on packets you send to this group
+		 *
+		 * @note Returns the exit code of the setsockopt call
+		 */
+		int setTTL(uint8_t ttl);
+	
+		/**
+		 * @brief Set whether packets sent from here go to other sockets on this ip
+		 *
+		 * @note Returns the exit code of the setsockopt call
+		 */
+		int setLoopback(bool enable);
+	
+		/**
+		 * @brief Set which interface is used for this socket
+		 *
+		 * @note Returns the exit code of the setsockopt call
+		 * @note Packets will go out the interface corresponding to the
+		 * default route unless you say otherwise with this call.
+		 */
+		int setInterface(const Socket::Address& addr);
+	
+		//! Set which interface is used for this socket, by name
+		int setInterface(const char* ifName);
+	
+		//! Set broadcast
+		int setBroadcast(bool enable);
+	
+		/**
+		 * @brief Leave the group (call this after joinGroup)
+		 *
+		 * @note Returns the exit code of the setsockopt call
+		 */
+		int leaveGroup();
+	 private:
+		//! My group address
+		Socket::Address mAddr;
+	
+		//! Are we in the group?
+		bool mInGroup;
+	
+	};
 };
 
 #endif // JH_MULTICAST_SOCKET_H_

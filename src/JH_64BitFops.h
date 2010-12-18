@@ -24,36 +24,20 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-/**
- *	@file jh_types.h
- *	@brief Standard include for types
- *
- *	This file can be included to define ISO C99 integer types and
- *	ISO C boolean types in both user and kernel space code.
- */
-#ifndef _JH_TYPES_H_
-#define _JH_TYPES_H_
-
-#define JH_ARRAY_SIZE( array ) (int)( sizeof( array ) / sizeof( array[ 0 ] ) )
-
-#include <stdint.h>
-#include <sys/types.h>
-#include <stdbool.h>
-#include <unistd.h>
-
-/** 
- * This is an integer type that is garenteed to be the width of a point on
- *  the platform.  This should always be an unsigned long, but there are strange
- *  platforms out there...
- */
-typedef unsigned long jh_ptr_int_t;
+ 
+#ifndef JH_64BIT_FOPS_H_
+#define JH_64BIT_FOPS_H_
 
 #ifdef PLATFORM_DARWIN
-typedef off_t jh_off64_t;
+#define jh_stat64_t struct stat64
+#define jh_stat64	stat64
+#define jh_lseek	lseek
+#define jh_fstat64	fstat64
 #else
-typedef __off64_t jh_off64_t;
+#define jh_stat64_t struct stat64
+#define jh_stat64	stat64
+#define jh_lseek	lseek64
+#define jh_fstat64	fstat64
 #endif
 
-#endif // _JH_TYPES_H_
-
+#endif // JH_64BIT_FOPS_H_

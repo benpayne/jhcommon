@@ -37,11 +37,14 @@
 #include <fcntl.h>
 
 #include "Socket.h"
+#include "File.h"
 #include "jh_memory.h"
 #include "logging.h"
 
 SET_LOG_CAT( LOG_CAT_ALL );
 SET_LOG_LEVEL( LOG_LVL_NOTICE );
+
+using namespace JetHead;
 
 #ifdef PLATFORM_DARWIN
 #define MSG_NOSIGNAL	0
@@ -52,7 +55,6 @@ Socket::Socket( bool sock_stream )
 		mListener( NULL ),
 		mFd( -1 ),
 		mSelector( NULL ),
-		mReaderWriterSelector( NULL ), mReaderWriterListener( NULL ),
 		mConnected( false ), mPrivateData( 0 ), mSockStream( sock_stream ),
 		mParent(this), mReadTimeout( 0 )
 {
@@ -76,7 +78,6 @@ Socket::Socket( int fd ) :
 	mListener( NULL ), 
 	mFd( fd ),  
 	mSelector( NULL ), 
-	mReaderWriterSelector( NULL ), mReaderWriterListener( NULL ), 
 	mConnected( false ), mPrivateData( 0 ), mSockStream( true ),
 	mParent(this), mReadTimeout( 0 )
 {
@@ -235,24 +236,6 @@ int Socket::shutdown()
 	return -1;
 }
 
-void Socket::setSelector( SelectorListener *listener, Selector *selector )
-{
-	if ( mFd != -1 and mConnected )
-	{
-		if ( mReaderWriterSelector != NULL and mReaderWriterListener != NULL )
-			mReaderWriterSelector->removeListener( mFd, mReaderWriterListener );
-		mReaderWriterListener = listener;
-		mReaderWriterSelector = selector;
-		if ( mReaderWriterSelector != NULL and mReaderWriterListener != NULL )
-			mReaderWriterSelector->addListener( mFd, POLLIN, mReaderWriterListener );
-	}
-	else
-	{
-		mReaderWriterListener = listener;
-		mReaderWriterSelector = selector;
-	}
-}
-
 void Socket::setSelector( SocketListener *listener, Selector *selector )
 {
 	mListener = listener;
@@ -350,17 +333,21 @@ int Socket::write( const void *buffer, int len )
 	return ::send(mFd, buffer, len, MSG_NOSIGNAL);
 }
 
-int Socket::close()
+JetHead::ErrCode Socket::close()
 {
 	int res = 0;
 	if ( mFd != -1 )
 	{
 		setConnected( false );
 		res = ::close( mFd );
-		LOG_NOISE( "fd %d", mFd );
 		mFd = -1;
+		if ( res == -1 )
+			return getErrorCode( errno );
 	}
-	return res;
+	else
+		return JetHead::kNotInitialized;
+	
+	return JetHead::kNoError;
 }
 
 // flags has a default value of POLLIN
@@ -380,17 +367,9 @@ void Socket::setConnected( bool state, int flags )
 		else
 			mSelector->removeListener( mFd, this );
 	}
-	
-	if ( mReaderWriterSelector != NULL and mReaderWriterListener != NULL )
-	{
-		if ( mConnected )
-			mReaderWriterSelector->addListener( mFd, flags, mReaderWriterListener );
-		else
-			mReaderWriterSelector->removeListener( mFd, mReaderWriterListener );
-	}
 }
 
-void Socket::processFileEvents( int fd, short events, uint32_t private_data )
+void Socket::processFileEvents( int fd, short events, jh_ptr_int_t private_data )
 {
 	TRACE_BEGIN( LOG_LVL_NOISE );
 	LOG( "events %x", events );
@@ -896,7 +875,7 @@ Socket *ServerSocket::accept()
 	return new_sock;
 }
 
-void ServerSocket::processFileEvents( int fd, short events, uint32_t private_data )
+void ServerSocket::processFileEvents( int fd, short events, jh_ptr_int_t private_data )
 {
 	TRACE_BEGIN( LOG_LVL_INFO );
 	if ( events & POLLIN )

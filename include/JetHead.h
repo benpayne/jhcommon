@@ -49,6 +49,9 @@ namespace JetHead
 		kNotInitialized, 	// the device or resource has not been initialized yet
 		kReadFailed, 		// an in progress read failed
 		kWriteFailed,       // a write failed
+		kFull,				// the resource is currently full and has no room to honor the request.
+		kUnknownError,		// an error occured, but the specific error is not available.
+		kConnectionClosed,	// a connection has been closed by the other side.
 		
 		// This constant immediately follows the last string-decodable
 		// JetHead ErrCode.  It is used to protect
@@ -62,6 +65,12 @@ namespace JetHead
 		kFirstUserErrorCode = 1000 
 	};
 
+	/** routine to map standard errno's into JetHead errors for standard
+	 *   file operations.  This is a helper for other JHCommon code that
+	 *   has to do the same mapping.  
+	 */
+	JetHead::ErrCode getErrorCode( int _errno );		
+	
 	/**
 	 * Get a easy to read message associate with an error code.
 	 */

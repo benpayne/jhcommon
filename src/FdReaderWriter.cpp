@@ -30,9 +30,12 @@
 #include "FdReaderWriter.h"
 #include "jh_types.h"
 #include "logging.h"
+#include "File.h"
 
 SET_LOG_CAT(LOG_CAT_ALL);
 SET_LOG_LEVEL(LOG_LVL_NOTICE);
+
+using namespace JetHead;
 
 FdReaderWriter::FdReaderWriter( int fd ) : 
 	mFd(fd), mSelector( NULL )
@@ -80,9 +83,14 @@ int FdReaderWriter::write(const void *buffer, int length)
 }
 
 
-int FdReaderWriter::close()
+JetHead::ErrCode FdReaderWriter::close()
 {
 	TRACE_BEGIN(LOG_LVL_NOISE);
 	
-	return ::close(mFd);
+	int res = ::close(mFd);
+	
+	if ( res == -1 )
+		return getErrorCode( errno );
+
+	return JetHead::kNoError;	
 }
