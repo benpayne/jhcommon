@@ -45,7 +45,9 @@ public:
 	virtual ~FileTest();
 
 	void Run();
-		
+	
+	static const int gNumberOfTests = 6;
+	
 protected:
 	virtual void handleData( File *f, short events );
 
@@ -80,6 +82,9 @@ void FileTest::Run()
 {
 	LOG_NOTICE( "File Test Started" );
 
+	if ( mTest > gNumberOfTests )
+		TestFailed( "Bad Test Number" );
+	
 	switch(mTest)
 	{
 	case 1:
@@ -540,21 +545,17 @@ void FileTest::Test6()
 		TestFailed( "Failed to get NULL for out of range error code %d", -1 );
 }
 
-
-static const int gNumberTests = 6;
-
 int main( int argc, char* argv[] )
 {
 	TestRunner runner( argv[ 0 ] );
-
-	TestCase *test_set[ gNumberTests ];
-
-	for ( int i = 0; i < gNumberTests; i++ )
+	TestSuite ts;
+	
+	for ( int i = 0; i < FileTest::gNumberOfTests; i++ )
 	{
-		test_set[ i ] = jh_new FileTest( i + 1 );
+		ts.AddTestCase( jh_new FileTest( i + 1 ) );
 	}
 	
-	runner.RunAll( test_set, gNumberTests );
+	runner.RunAll( ts );
 	
 	return 0;
 }

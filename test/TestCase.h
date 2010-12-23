@@ -150,6 +150,30 @@ private:
 	JHSTD::string mErrorString;
 };
 
+class TestSuite
+{
+public:
+	TestSuite() {}
+
+	virtual ~TestSuite()
+	{
+		for ( int i = 0; i < (int)mTestCases.size(); i++ )
+		{
+			delete mTestCases[ i ];
+		}
+	}
+	
+	void AddTestCase( TestCase *tc )
+	{
+		mTestCases.push_back( tc );
+	}
+	
+private:
+	JetHead::vector<TestCase*>	mTestCases;
+
+	friend class TestRunner;
+};
+
 class TestRunner
 {
 public:
@@ -176,6 +200,20 @@ public:
 			delete array[ i ];
 		}
 	}
+
+	void RunAll( TestSuite &ts )
+	{
+		for( int i = 0; i < (int)ts.mTestCases.size(); i++ )
+		{
+			LOG_NOTICE( "Running test %s", ts.mTestCases[ i ]->GetTestName() );
+			if ( ts.mTestCases[ i ]->Start() == false )
+			{
+				exit( EXIT_FAILURE );
+			}
+			delete ts.mTestCases[ i ];
+			ts.mTestCases[ i ] = NULL;
+		}
+	}	
 };
 
 #endif // JH_TEST_CASE_H_

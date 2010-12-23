@@ -5,8 +5,8 @@ SUBDIRS = ../src
 TARGET_PROGS = eventThreadTest selectorTest timerTest comServerTest \
 	loggingTest listenerContainerTest sigAlrmTest circularBufTest \
 	URITest SocketTest HttpTest TimeUtilsTest \
-	SocketTest2 FileTest loggingTest2 allocatorTest eventAgentTest \
-	telnetServer regexTest stringTest
+	SocketTest2 FileTest pathTest loggingTest2 allocatorTest eventAgentTest \
+	telnetServer regexTest stringTest 
 
 TARGET_LIBS = libfooservice
 
@@ -28,6 +28,7 @@ SRCS_eventAgentTest = eventAgentTest.cpp
 SRCS_telnetServer = TelnetServer.cpp
 SRCS_regexTest = regexTest.cpp
 SRCS_stringTest = stringTest.cpp
+SRCS_pathTest = PathTest.cpp
 
 SRCS_comServerTest = comServer.cpp
 LIBS_comServerTest = jhcomserver

@@ -66,7 +66,19 @@ namespace JetHead
 		//! Return the path part of a file name ../../dir/file.so would return "so"
 		JHSTD::string filenameExtention();
 
+		//! Is this path a full path or relative path.
+		bool isRelative();
+		
+		//! If this path is relative, convert it to a full path, based on current working director.
+		bool makeAbsolute();
+
+		//! If this path contains un-nessasary links remove them (i.e. "./p1/../p2" would become "./p2" ) 
+		bool normalize();
+		
+		//! Create a file if it does not exist, otherwise change it's modified time to current time.
 		ErrCode touch();
+
+		//! Remove a file or empty directory from the file system.
 		ErrCode remove();
 		
 		/**
@@ -74,13 +86,19 @@ namespace JetHead
 		 *  for rename(2) for details on edge cases.
 		 */
 		ErrCode rename( const Path &new_name );
+
+		/** Make a directory of this name, only the last element in the path 
+		 *    will be created, if a parent directory does not exist this will fail.
+		 */
 		ErrCode mkdir();
+
+		//! Make a directory of this name and any parent dirs that do not exist.
 		ErrCode mkdirs();
 
 		bool isFile();
 		bool isDir();
 		bool exists();	
-
+		
 		ErrCode list( JetHead::vector<Path> &entries );
 
 		URI	toURI();
@@ -91,6 +109,10 @@ namespace JetHead
 		//! get the modified time of the file.
 		time_t	getModifiedTime();
 		
+		static Path getCWD();
+		
+		static const char PATH_SEPERATOR = '/';
+
 	private:
 		JHSTD::string mPath;
 	};

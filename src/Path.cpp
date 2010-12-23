@@ -27,6 +27,8 @@
 
 #include <sys/stat.h>
 #include <utime.h>
+#include <unistd.h>
+#include <limits.h>
 
 #include "jh_types.h"
 #include "logging.h"
@@ -52,6 +54,9 @@ Path &Path::operator=( const URI &uri )
 
 bool Path::append( const JHSTD::string &path )
 {
+	if ( mPath[ mPath.length() - 1 ] != PATH_SEPERATOR )
+		mPath.append( 1, PATH_SEPERATOR	);
+		
 	mPath.append( path );
 	return true;
 }
@@ -136,7 +141,7 @@ string Path::parent()
 
 	if ( pos == string::npos )
 	{
-		return mPath;
+		return ".";
 	}
 	else
 	{
@@ -171,7 +176,7 @@ string Path::fileBasename()
 	}
 	else
 	{
-		return f.substr( 0, pos - 1 );
+		return f.substr( 0, pos );
 	}
 }
 
@@ -183,7 +188,7 @@ string Path::filenameExtention()
 
 	if ( pos == string::npos )
 	{
-		return f;
+		return "";
 	}
 	else
 	{
@@ -237,6 +242,64 @@ jh_off64_t Path::length()
 		return buf.st_size;
 	else
 		return (jh_off64_t)-1;
+}
+
+bool	Path::isRelative()
+{
+	if ( mPath[ 0 ] == PATH_SEPERATOR )
+		return false;
+	else
+		return true;
+}
+
+bool	Path::makeAbsolute()
+{
+	Path p( getCWD() );
+	
+	p.append( mPath );
+	
+	mPath = p.getString();
+	
+	return true;
+}
+
+bool	Path::normalize()
+{
+	JetHead::vector<JHSTD::string> parts;
+	JetHead::vector<JHSTD::string> parts2;
+	JetHead::split( mPath, "/", parts );
+	
+	for ( unsigned i = 0; i < parts.size(); i++ )
+	{
+		if ( parts[ i ] == ".." )
+		{
+			parts2.erase( parts2.size() - 1	);
+		}
+		else if ( parts[ i ] != "." && parts[ i ] != "" )
+		{
+			parts2.push_back( parts[ i ] );
+		}
+	}
+	
+	if ( isRelative() == false )
+		mPath.assign( 1, PATH_SEPERATOR );
+	
+	for ( unsigned i = 0; i < parts2.size() - 1; i++ )
+	{
+		mPath.append( parts2[ i ] );
+		mPath.append( 1, PATH_SEPERATOR );
+	}
+
+	mPath.append( parts2[ parts2.size() - 1 ] );
+	
+	return true;
+}
+
+Path	Path::getCWD()
+{
+	char buffer[ PATH_MAX ];
+	Path p( ::getcwd( buffer, PATH_MAX ) );
+	return p;
 }
 
 
