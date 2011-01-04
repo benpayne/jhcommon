@@ -52,6 +52,7 @@ namespace JetHead
 		kFull,				// the resource is currently full and has no room to honor the request.
 		kUnknownError,		// an error occured, but the specific error is not available.
 		kConnectionClosed,	// a connection has been closed by the other side.
+		kNotEmpty,			// the resource need to be emptied before this operation can complete.
 		
 		// This constant immediately follows the last string-decodable
 		// JetHead ErrCode.  It is used to protect

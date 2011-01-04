@@ -52,6 +52,7 @@ static const char *gErrorStrings[] = {
 	"Resource Full",
 	"Unknown Error",
 	"Connection Closed",
+	"Resource Not Empty",
 	
 	// keep in sync with JetHead.h
 	"Max Error String",
@@ -114,6 +115,9 @@ JetHead::ErrCode	JetHead::getErrorCode( int _errno )
 		break;
 	case EPIPE:
 		err = kConnectionClosed;
+		break;
+	case ENOTEMPTY:
+		err = kNotEmpty;
 		break;
 	case EIO:
 	default:

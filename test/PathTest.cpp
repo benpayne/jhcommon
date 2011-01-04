@@ -215,14 +215,84 @@ void PathTest::Test3()
 		TestFailed( "makeAbsolute failed %s", p3.getString().c_str() );	
 }
 
-// File Info and helpers (length, getModifiedTime, isFile, isDir, exists
-void PathTest::Test4()
-{
-}
+#define IfError( err, str... ) \
+	if ( err != kNoError ) \
+		TestFailed( str## )
 
 // File/Dir creation/deletion. (touch, remove, rename, mkdir, mkdirs )
+void PathTest::Test4()
+{
+	Path p1( "bar" );
+	Path p2( "foo" );
+	
+	// remove p1 and p2 incase they exist from a previous test.
+	ErrCode err = p1.remove();
+
+	if ( err != kNoError && err != kNotFound )
+		TestFailed( "unlink failed on \"bar\"" );
+
+	err = p2.remove();
+
+	if ( err != kNoError && err != kNotFound )
+		TestFailed( "unlink failed on \"foo\"" );
+
+	// touch p1 and p2
+	err = p1.touch();
+	IfError( "touch failed on \"bar\"" );
+
+	err = p2.touch();
+	IfError( "touch failed on \"foo\"" );
+
+	// test the existance of p1, but succefully removing it.
+	err = p1.remove();	
+
+	IfError( "remove failed on \"bar\"" );
+
+	// now rename p2 to p1
+	err = p2.rename( p1 );
+
+	IfError( "rename failed on \"bar\"" );
+
+	// again remove to test existance.
+	err = p1.remove();	
+
+	IfError( "remove failed on \"bar\"" );
+
+	// lets create a dir and remove it.
+	Path d1( "test" );
+	Path p3( "test/foo" );
+	
+	err = d1.mkdir();
+
+	IfError( "mkdir failed on \"test\"" );
+	
+	err = p1.remove();	
+
+	IfError( "remove failed on \"test\"" );
+
+	// now create the dir put a file in it and test that remove of the dir
+	//  fails with NotEmpty.
+	err = d1.mkdir();
+
+	IfError( "mkdir failed on \"test\"" );
+
+	err = p3.touch();
+
+	IfError( "touch failed on \"%s", p3.getString().c_str() );
+
+	err = d1.remove();
+
+	IfError( "remove failed on \"%s", d1.getString().c_str() );
+	
+}
+
+// File Info and helpers (length, getModifiedTime, isFile, isDir, exists
 void PathTest::Test5()
 {
+	Path p1( "pathTest" );
+		
+	if ( p1.length() > 0 )
+		TestFailed( "length zero for executable file." );
 }
 
 // Dir Listing ( list )

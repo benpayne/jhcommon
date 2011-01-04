@@ -1,0 +1,10 @@
+TODO
+
+1. Finish Path test and validation.
+2. JH COM remove need to client library and improve JH COM test cases.
+3. JH COM add IDL support
+4. JH Build, develop custom make parser.
+5. JH Build, add support for libtool like script.
+6. Update all tests to use Test Suite.
+7. Consolidate Tests to single program.
+
