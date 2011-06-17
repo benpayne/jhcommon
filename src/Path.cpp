@@ -35,11 +35,12 @@
 #include "Path.h"
 #include "JH_64BitFops.h"
 #include "File.h"
+#include "jh_vector.h"
 
 using namespace JetHead;
 
 SET_LOG_CAT( LOG_CAT_ALL );
-SET_LOG_LEVEL( LOG_LVL_NOTICE );
+SET_LOG_LEVEL( LOG_LVL_NOISE );
 
 using JHSTD::string;
 
@@ -89,10 +90,12 @@ ErrCode Path::remove()
 	int res = 0;
 	if ( isDir() )
 	{
+		LOG_NOISE( "Removing Dir" );
 		res = ::rmdir( mPath.c_str() );
 	}
 	else
 	{
+		LOG_NOISE( "Removing File" );
 		res = ::unlink( mPath.c_str() );
 	}
 	
@@ -129,38 +132,63 @@ ErrCode Path::mkdir()
 }
 
 ErrCode Path::mkdirs()
-{
-	// TODO...
+{	
+	JetHead::vector<JHSTD::string> parts;
+	JetHead::vector<JHSTD::string> parts2;
+	JetHead::split( mPath, "/", parts );
+	Path p = parts[ 0 ];
+	
+	for ( unsigned i = 1; i < parts.size(); i++ )
+	{
+		if ( !p.exists() )
+		{
+			ErrCode err = p.mkdir();
+			if ( err != kNoError )
+				return err;
+		}
+		
+		p.append( parts[ i ] );
+	}
+		
 	return kNoError;
 }
 
 //! Return the path part of a file name ../../dir/file.so would return "../../dir"
-string Path::parent()
+Path Path::parent()
 {	
-	unsigned pos = mPath.rfind( "/" );
+	Path p = *this;
+	p.normalize();
 
+	unsigned pos = p.mPath.rfind( "/" );
+
+	//if ( pos == mPath.length() - 1 )
+	//	pos = mPath.rfind( "/", pos - 1 );
+		
 	if ( pos == string::npos )
 	{
-		return ".";
+		return Path( "." );
 	}
 	else
 	{
-		return mPath.substr( 0, pos + 1 );
+		return Path( p.mPath.substr( 0, pos + 1 ) );
 	}
 }
 
 //! Return the path part of a file name ../../dir/file.so would return "file.so"
 string Path::filename()
 {	
-	unsigned pos = mPath.rfind( "/" );
+	Path p = *this;
+	p.normalize();
+	
+	unsigned pos = p.mPath.rfind( "/" );
 
 	if ( pos == string::npos )
 	{
-		return mPath;
+		return p.mPath;
 	}
 	else
 	{
-		return mPath.substr( pos + 1 );
+		return p.mPath.substr( pos + 1, string::npos );
 	}
 }
 
@@ -268,21 +296,28 @@ bool	Path::normalize()
 	JetHead::vector<JHSTD::string> parts;
 	JetHead::vector<JHSTD::string> parts2;
 	JetHead::split( mPath, "/", parts );
+	bool start = true;
 	
 	for ( unsigned i = 0; i < parts.size(); i++ )
 	{
 		if ( parts[ i ] == ".." )
 		{
-			parts2.erase( parts2.size() - 1	);
+			if ( !start )
+				parts2.erase( parts2.size() - 1	);
+			else
+				parts2.push_back( parts[ i ] );
 		}
 		else if ( parts[ i ] != "." && parts[ i ] != "" )
 		{
+			start = false;
 			parts2.push_back( parts[ i ] );
 		}
 	}
-	
+		
 	if ( isRelative() == false )
 		mPath.assign( 1, PATH_SEPERATOR );
+	else
+		mPath.clear();
 	
 	for ( unsigned i = 0; i < parts2.size() - 1; i++ )
 	{

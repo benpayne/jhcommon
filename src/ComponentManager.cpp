@@ -32,14 +32,10 @@
 #include <dlfcn.h>
 
 SET_LOG_CAT( LOG_CAT_ALL );
-SET_LOG_LEVEL( LOG_LVL_NOTICE );
-
-JHCOM_IMPL_ISUPPORTS1( ComponentManager, IComponentManager )
+SET_LOG_LEVEL( LOG_LVL_NOISE );
 
 ComponentManager::ComponentManager()
 {
-	JHCOM_INIT_ISUPPORTS;
-
 	// AddRef component manager when it's created to avoid
 	// accidental deletion from people storing the pointer
 	// in a SmartPtr or otherwise AddRef/Releasing when they
@@ -58,17 +54,28 @@ ComponentManager::~ComponentManager()
 	}
 	// delete all the ClassInfo's
 	mClasses.clear();
+
+	// release references to all objects.
+	for (JetHead::list<ModuleInfo*>::iterator i = mModules.begin();
+		 i != mModules.end(); ++i)
+	{
+		(*i)->mModule->Release();
+		delete *i;
+	}
+	// delete all the ModuleInfo's
+	mModules.clear();
 }
 	
 ErrorCode ComponentManager::LoadLibrary( const char *name )
 {
 	TRACE_BEGIN( LOG_LVL_INFO );
-	ErrorCode result = kNoError;	
-
+	IModule *mod = NULL;
+	ErrorCode result = kNoError;
+	
 	LOG_NOTICE( "Opening Library: %s", name );
 	
 	ErrorCode (*LoadLibrary)( IComponentManager *mgr );
-	ErrorCode (*RegisterServices)( IComponentManager *mgr );
+	IModule *(*GetModule)();
 	void *handle = dlopen( name, RTLD_LAZY );
 	
 	if ( handle == NULL )
@@ -79,9 +86,9 @@ ErrorCode ComponentManager::LoadLibrary( const char *name )
 	else
 	{
 		LoadLibrary = (ErrorCode (*)(IComponentManager *mgr))dlsym( handle, "JHCOM_LibraryEntry" );
-		RegisterServices = (ErrorCode (*)(IComponentManager *mgr))dlsym( handle, "JHCOM_RegisterServices" );
+		GetModule = (IModule *(*)())dlsym( handle, "JHCOM_GetModule" );
 
-		if ( RegisterServices == NULL || LoadLibrary == NULL )
+		if ( GetModule == NULL || LoadLibrary == NULL )
 		{
 			result = kLoadFailed;
 			LOG_WARN( "Failed to get symbol" );
@@ -89,15 +96,77 @@ ErrorCode ComponentManager::LoadLibrary( const char *name )
 		else
 		{
 			LOG( "LoadLibrary is %p", LoadLibrary );
-			LOG( "RegisterServices is %p", RegisterServices );
+			LOG( "RegisterServices is %p", GetModule );
 			result = LoadLibrary( this );
 			
 			if ( result == kNoError )
-				result = RegisterServices( this );
+			{
+				mod = GetModule();
+				mod->AddRef();
+				mod->loadComponents();
+				ModuleInfo *info = jh_new ModuleInfo( name, mod, handle );
+				mModules.push_back( info );
+			}
 		}
 	}
-		
+	
 	return result;
+}
+
+ComponentManager::ModuleInfo *ComponentManager::getModInfo( const char *name )
+{
+	ModuleInfo match( name );
+
+	for (JetHead::list<ModuleInfo*>::iterator i = mModules.begin(); 
+		 i != mModules.end(); ++i)
+	{
+		if (*(*i) == match)
+			return *i;
+	}
+	
+	return NULL;
+}
+
+IModule *ComponentManager::GetModule( const char *name )
+{
+	ModuleInfo *info = getModInfo( name );
+
+	if ( info == NULL || info->mModule == NULL )
+		return NULL;	
+	
+	return info->mModule;	
+}
+
+ErrorCode ComponentManager::RemoveModule( const char *name )
+{
+	ModuleInfo *info = getModInfo( name );
+
+	if ( info == NULL || info->mModule == NULL )
+		return kNoClass;	
+
+	info->mModule->unloadComponents();
+	info->mModule->Release();
+	info->mModule = NULL;
+	
+	return kNoError;
+}
+
+ErrorCode ComponentManager::UnloadLibrary( CID cid )
+{
+	for (JetHead::list<ModuleInfo*>::iterator i = mModules.begin(); 
+		 i != mModules.end(); ++i)
+	{
+		if (*(*i) == cid)
+		{
+			ModuleInfo *info = *i;
+			dlclose( info->mHandle );
+			delete info;
+			i.erase();
+			return kNoError;
+		}
+	}
+	
+	return kNoClass;	
 }
 
 ErrorCode ComponentManager::CreateInstance( CID cid, IID iid, void **object )
@@ -107,6 +176,8 @@ ErrorCode ComponentManager::CreateInstance( CID cid, IID iid, void **object )
 	IFactory *factory;
 	
 	result = GetService( cid, IFactory::getIID(), (void**)&factory );
+	
+	LOG( "GetService result %d", result );
 	
 	if ( result == kNoError )
 	{
@@ -140,7 +211,7 @@ ErrorCode ComponentManager::GetService( CID cid, IID iid, void **object )
 	LOG( "info is %p", info );
 	
 	if ( info != NULL )
-		result = info->mClass->QueryInterface( iid, object );
+		*object = info->mClass->QueryInterface( iid, &result );
 	else
 		result = kNoClass;
 
@@ -173,14 +244,13 @@ ErrorCode ComponentManager::RemoveService( CID cid )
 		{
 			ClassInfo *info = *i;
 			info->mClass->Release();
+			delete info;
 			i.erase();
 			return kNoError;
 		}
 	}
 	
-	return kNoClass;
-
-	
+	return kNoClass;	
 }
 
 bool JHCOM::ComId::operator==( const ComId &other ) const 

@@ -94,7 +94,8 @@ namespace JHCOM
 		
 		virtual ErrorCode operator()( const IID& iid, void** obj ) const
 		{
-			ErrorCode err = mPtr->QueryInterface( iid, obj );
+			ErrorCode err;
+			*obj = mPtr->QueryInterface( iid, &err );
 			if ( mError != NULL )
 				*mError = err;
 			return err;
@@ -180,20 +181,33 @@ namespace JHCOM
 			if ( cid == JHCOM_GET_CID( T ) )
 			{
 				supports = creator();
-				result = supports->QueryInterface( iid, object );
+				*object = supports->QueryInterface( iid, &result );
 			}
 			else
 			{
+				LOG_WARN( "Asking for %s we are %s", cid.toString(), JHCOM_GET_CID( T ).toString() );
 				result = kNoClass;
 			}
 			
 			return result;		
 		}
 				
-		JHCOM_DECL_ISUPPORTS
+		JHCOM_DECL_ISUPPORTS1( IFactory )
 	};
+	
+	class ModuleBase : public IModule
+	{
+	public:
+		ModuleBase( CID cid ) : mCID( cid ) {}
+				
+		const char *getCID() { return mCID.toString(); }
 
-	JHCOM_IMPL_ISUPPORTS_TEMPLATE1( GenericFactory<T>, class T, IFactory )	
+		JHCOM_DECL_ISUPPORTS1( IModule )
+		
+	private:
+		CID	mCID;
+	};
+	
 };
 
 #endif // COMPONENTMANAGERUTILS_H_

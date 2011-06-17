@@ -1,17 +1,4 @@
 
-class IInvoker
-{
-public:
-	IInvoker();
-	
-	virtual void call( int method_num, std::vector<Variant> ) = 0;
-};
-
-class IRequester
-{
-public:
-	IRequester
-	
 class IORBConnection
 {
 }
@@ -28,10 +15,10 @@ public:
 		uint32_t	oid;
 	} OID;
 	
-	OID	addObject( ISupports *obj );
+	OID	addObject( void *obj );
 	JHCOM::ErrCode remoteObject( OID oid );
 	
-	ISupports	*getObject( OID );
+	void	*getObject( OID );
 
 	void	addConnection( std::string server_name, IORBConnection *connection );
 	

@@ -64,13 +64,16 @@ Socket::Socket( bool sock_stream )
 		mFd = socket( AF_INET, SOCK_STREAM, 0 );
 	else
 		mFd = socket( AF_INET, SOCK_DGRAM, 0 );
-		
+
+	if ( mFd == -1 )
+	{
+		LOG_ERR_FATAL( "Failed to create socket" );
+		return;
+	}
+	
 	int on = 1;
 	setsockopt( mFd, SOL_SOCKET, SO_REUSEADDR, (char*)&on, sizeof(on) );
 	LOG_NOISE( "fd %d", mFd );
-
-	if ( mFd == -1 )
-		LOG_ERR_FATAL( "Failed to create socket" );
 }
 
 Socket::Socket( int fd ) : 

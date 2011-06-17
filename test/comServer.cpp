@@ -35,10 +35,11 @@ SET_LOG_CAT( LOG_CAT_ALL );
 SET_LOG_LEVEL( LOG_LVL_INFO );
 
 int main( int argc, char *argv[] )
-{		
+{
 	IComponentManager *mgr = getComponentManager();
-
-	ErrorCode result = mgr->LoadLibrary( "libfooservice.so" );
+	ErrorCode result;
+	
+	result = mgr->LoadLibrary( "libfooservice.so" );
 
 	if ( result != kNoError )
 	{

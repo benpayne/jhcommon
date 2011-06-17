@@ -31,6 +31,10 @@
 // Define helper templates for 0-10 parameter AsyncEventAgent
 // and 0-10 parameter SyncEventAgent implementations
 
+#ifndef JH_EVENT_AGENT_H_
+#error "Please include EventAgent.h not EventAgentT.h"
+#endif
+
 ///////////////////////////////
 //  Async 0 parameter agent
 ///////////////////////////////

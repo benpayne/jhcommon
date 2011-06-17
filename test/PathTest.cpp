@@ -46,16 +46,18 @@ public:
 
 	void Run();
 	
-	static const int gNumberOfTests = 7;
+	static const int gNumberOfTests = 9;
 	
 private:
 	void Test1(); // Construct and assign
-	void Test2(); // Path info
-	void Test3(); // append
-	void Test4(); // File info and helpers
-	void Test5(); // File/Dir creation/deletion
-	void Test6(); // Dir listing
-	void Test7(); // Path <-> URI
+	void PartsTest(); // Path info
+	void NormalizeTest(); // normalize
+	void AppendTest(); // append
+	void Test5(); // isRelative/makeAbsolute
+	void Test6(); // File info and helpers
+	void Test7(); // File/Dir creation/deletion
+	void Test8(); // Dir listing
+	void Test9(); // Path <-> URI
 	
 	int mTest;
 };
@@ -86,13 +88,13 @@ void PathTest::Run()
 		Test1();
 		break;
 	case 2:
-		Test2();
+		NormalizeTest();
 		break;
 	case 3:
-		Test3();
+		PartsTest();
 		break;
 	case 4:
-		Test4();
+		AppendTest();
 		break;
 	case 5:
 		Test5();
@@ -102,6 +104,12 @@ void PathTest::Run()
 		break;
 	case 7:
 		Test7();
+		break;
+	case 8:
+		Test8();
+		break;
+	case 9:
+		Test9();
 		break;
 	}
 
@@ -135,92 +143,108 @@ void PathTest::Test1()
 		TestFailed( "const char * assignment failed" );
 }
 
-struct Test2Data {
+struct PartsTestData {
 	const char *path;
 	const char *parent;
 	const char *filename;
 	const char *fileBasename;
 	const char *filenameExtention;
-} test2Data[] = {
+} partsTestData[] = {
 	{ "../../dir/file.so", 		"../../dir/", "file.so", "file", "so" },
 	{ "/top/next/dir/file.so", 	"/top/next/dir/", "file.so", "file", "so" },
 	{ "next/dir/file.so", 		"next/dir/", "file.so", "file", "so" },
 	{ "file.so", 				".", "file.so", "file", "so" },
 	{ "file", 					".", "file", "file", "" },
+	{ "file/", 					".", "file", "file", "" },
+	{ "next/file/", 					"next/", "file", "file", "" },
+	{ "/next/file/", 					"/next/", "file", "file", "" },
+	{ "/next/file", 					"/next/", "file", "file", "" },
+	{ "//next//file//", 					"/next/", "file", "file", "" },
 };
 
 // Path parts
-void PathTest::Test2()
+void PathTest::PartsTest()
 {
-	for ( int i = 0; i < JH_ARRAY_SIZE( test2Data ); i++ )
+	for ( int i = 0; i < JH_ARRAY_SIZE( partsTestData ); i++ )
 	{
-		Path p( test2Data[ i ].path );
-		if ( p.parent() != test2Data[ i ].parent )
-			TestFailed( "parent failed %d \"%s\"", i, p.parent().c_str() );
-		if ( p.filename() != test2Data[ i ].filename )
+		Path p( partsTestData[ i ].path );
+		if ( p.parent() != partsTestData[ i ].parent )
+			TestFailed( "parent failed %d \"%s\"", i, p.parent().getString().c_str() );
+		if ( p.filename() != partsTestData[ i ].filename )
 			TestFailed( "filename failed %d \"%s\"", i, p.filename().c_str() );
-		if ( p.fileBasename() != test2Data[ i ].fileBasename )
+		if ( p.fileBasename() != partsTestData[ i ].fileBasename )
 			TestFailed( "fileBasename failed %d \"%s\"", i, p.fileBasename().c_str() );
-		if ( p.filenameExtention() != test2Data[ i ].filenameExtention )
+		if ( p.filenameExtention() != partsTestData[ i ].filenameExtention )
 			TestFailed( "filenameExtention failed %d \"%s\"", i, p.filenameExtention().c_str() );
 	}
 }
 
-// append and relative vs absolute paths.
-void PathTest::Test3()
+struct NormalizeTestData {
+	const char *path;
+	const char *norm_path;
+} normalizeTestData[] = {
+	{ "/top/next/dir/file.so", 	"/top/next/dir/file.so" },
+	{ "next/dir/file.so", 		"next/dir/file.so" },
+	{ "file.so", 				"file.so" },
+	{ "file", 					"file" },
+	{ "file/", 					"file" },
+	{ "/next/file/", 			"/next/file" },
+	{ "/next/file", 			"/next/file" },
+	{ "/next/file//", 			"/next/file" },
+	{ "../../dir/file.so", 		"../../dir/file.so" },
+	{ "/top/../next/dir/file.so", 	"/next/dir/file.so" },
+	{ "/top/../next/../dir/file.so", 	"/dir/file.so" },
+};
+
+void PathTest::NormalizeTest()
 {
-	Path p1( "/foo/bar" );
-	Path p2( "p2" );
-	JHSTD::string s = "../mydir/";
-	Path p3( s );
-	Path cwd = Path::getCWD();
-	
-	p1.append( "help" );
-	
-	if ( p1.getString() != "/foo/bar/help" )
-		TestFailed( "append failed %s", p1.getString().c_str() );
-
-	p1.append( s );
-
-	if ( p1.getString() != "/foo/bar/help/../mydir/" )
-		TestFailed( "append failed %s", p1.getString().c_str() );
-
-	p1.append( p2 );
-
-	if ( p1.getString() != "/foo/bar/help/../mydir/p2" )
-		TestFailed( "append failed %s", p1.getString().c_str() );
-	
-	if ( p1.isRelative() == true )
-		TestFailed( "isRelative" );
-	if ( p2.isRelative() == false )
-		TestFailed( "isRelative" );
-	if ( p3.isRelative() == false )
-		TestFailed( "isRelative" );
-	
-	p1.normalize();
-	p2.makeAbsolute();
-	p3.makeAbsolute();
-	
-	if ( p1.getString() != "/foo/bar/mydir/p2" )
-		TestFailed( "normalize failed %s", p1.getString().c_str() );
-	
-	JHSTD::string scwd = cwd.getString();
-	
-	LOG_NOTICE( "CWD = %s", scwd.c_str() );
-	
-	if ( p2.getString() != scwd + "/p2" )
-		TestFailed( "makeAbsolute failed %s", p2.getString().c_str() );
-
-	if ( p3.getString() != scwd + "/../mydir/" )
-		TestFailed( "makeAbsolute failed %s", p3.getString().c_str() );	
+	for ( int i = 0; i < JH_ARRAY_SIZE( normalizeTestData ); i++ )
+	{
+		Path p = normalizeTestData[ i ].path;
+		p.normalize();
+		if ( p != normalizeTestData[ i ].norm_path )
+			TestFailed( "Normalize of %s failed (%s)", normalizeTestData[ i ].path, p.getString().c_str() );
+	}
 }
 
-#define IfError( err, str... ) \
-	if ( err != kNoError ) \
-		TestFailed( str## )
+struct AppendTestData {
+	const char *path1;
+	const char *path2;
+	const char *result;
+} appendTestData[] = {
+	{ "/foo/bar", "help", "/foo/bar/help" },
+	{ "/foo/bar/help", "../mydir/", "/foo/bar/help/../mydir/" },
+	{ "/foo/bar/help/../mydir/", "p2", "/foo/bar/help/../mydir/p2" },
+};
+
+
+// append and relative vs absolute paths.
+void PathTest::AppendTest()
+{
+	for ( int i = 0; i < JH_ARRAY_SIZE( appendTestData ); i++ )
+	{
+		Path p = appendTestData[ i ].path1;
+		p.append( appendTestData[ i ].path2 );
+		if ( p != appendTestData[ i ].result )
+		{
+			TestFailed( "Append of %s and %s failed (%s)", 
+				appendTestData[ i ].path1, 
+				appendTestData[ i ].path2, 
+				p.getString().c_str() );
+		}
+	}
+}
+
+void PathTest::Test5()
+{
+}
+
+#define IfError( str... ) \
+		if ( err != kNoError ) \
+		TestFailed( str )
 
 // File/Dir creation/deletion. (touch, remove, rename, mkdir, mkdirs )
-void PathTest::Test4()
+void PathTest::Test6()
 {
 	Path p1( "bar" );
 	Path p2( "foo" );
@@ -245,63 +269,96 @@ void PathTest::Test4()
 
 	// test the existance of p1, but succefully removing it.
 	err = p1.remove();	
-
 	IfError( "remove failed on \"bar\"" );
 
 	// now rename p2 to p1
 	err = p2.rename( p1 );
-
 	IfError( "rename failed on \"bar\"" );
 
 	// again remove to test existance.
 	err = p1.remove();	
-
 	IfError( "remove failed on \"bar\"" );
 
 	// lets create a dir and remove it.
 	Path d1( "test" );
 	Path p3( "test/foo" );
+
+	err = p3.remove();	
+	if ( err != kNoError && err != kNotFound )
+		TestFailed( "remove of \"test/foo\" failed \"%s\"", JetHead::getErrorString( err ) );
+	err = d1.remove();	
+	if ( err != kNoError && err != kNotFound )
+		TestFailed( "remove of \"test\" failed \"%s\"", JetHead::getErrorString( err ) );
 	
 	err = d1.mkdir();
-
-	IfError( "mkdir failed on \"test\"" );
+	IfError( "mkdir failed on \"test\" \"%s\"", JetHead::getErrorString( err ) );
 	
-	err = p1.remove();	
-
-	IfError( "remove failed on \"test\"" );
+	err = d1.remove();	
+	IfError( "remove failed on \"test\" \"%s\"", JetHead::getErrorString( err ) );
 
 	// now create the dir put a file in it and test that remove of the dir
 	//  fails with NotEmpty.
 	err = d1.mkdir();
-
 	IfError( "mkdir failed on \"test\"" );
 
 	err = p3.touch();
-
 	IfError( "touch failed on \"%s", p3.getString().c_str() );
 
 	err = d1.remove();
-
-	IfError( "remove failed on \"%s", d1.getString().c_str() );
+	if ( err != kNotEmpty )
+		TestFailed( "remove of \"test\" should have failed \"%s\"", JetHead::getErrorString( err ) );
 	
+	err = p3.remove();
+	IfError( "remove of \"test/foo\" failed \"%s\"", JetHead::getErrorString( err ) );
+
+	err = d1.remove();
+	IfError( "remove of \"test\" failed \"%s\"", JetHead::getErrorString( err ) );
+
+	// lets create multiple dirs in one call
+	Path d2( "test/path/to/" );
+	Path p4( "test/path/to/file" );
+	
+	err = d2.mkdir();	
+	if ( err != kNotFound )
+		TestFailed( "creating dir with mkdir should fail \"%s\"", JetHead::getErrorString( err ) );
+
+	err = d2.mkdirs();	
+	IfError( "creating with mkdirs failed \"%s\"", JetHead::getErrorString( err ) );
+	
+	err = p4.touch();
+	IfError( "creating file in dirs failed \"%s\"", JetHead::getErrorString( err ) );
+
+#if 0
+	err = p4.remove();
+	IfError( "cleanup failed \"%s\"", JetHead::getErrorString( err ) );
+	err = d2.remove();
+	IfError( "cleanup failed \"%s\"", JetHead::getErrorString( err ) );
+	d2 = "test/path";
+	err = d2.remove();
+	IfError( "cleanup failed \"%s\"", JetHead::getErrorString( err ) );
+	d2 = "test";
+	err = d2.remove();
+	IfError( "cleanup failed \"%s\"", JetHead::getErrorString( err ) );
+#endif
+
 }
 
 // File Info and helpers (length, getModifiedTime, isFile, isDir, exists
-void PathTest::Test5()
+void PathTest::Test7()
 {
 	Path p1( "pathTest" );
 		
-	if ( p1.length() > 0 )
+	if ( p1.length() == 0 )
 		TestFailed( "length zero for executable file." );
 }
 
 // Dir Listing ( list )
-void PathTest::Test6()
+void PathTest::Test8()
 {
 }
 
 // Path <-> URI (URI assign, construct and toURI )
-void PathTest::Test7()
+void PathTest::Test9()
 {
 }
 

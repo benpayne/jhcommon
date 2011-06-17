@@ -30,7 +30,7 @@
 #include <string.h>
 
 SET_LOG_CAT( LOG_CAT_ALL );
-SET_LOG_LEVEL( LOG_LVL_NOISE );
+SET_LOG_LEVEL( LOG_LVL_NOTICE );
 
 bool JHCOM::ComId::operator==( const ComId &other ) const 
 {
@@ -49,11 +49,7 @@ IComponentManager *JHCOM::getComponentManager()
 
 extern "C" ErrorCode JHCOM_LibraryEntry( IComponentManager *mgr )
 {
-	TRACE_BEGIN( LOG_LVL_NOTICE );
-	
-	gManager = mgr;
-
-	JHCOM_RegisterServices( gManager );
-	
+	TRACE_BEGIN( LOG_LVL_NOISE );
+	gManager = mgr;	
 	return kNoError;
 }

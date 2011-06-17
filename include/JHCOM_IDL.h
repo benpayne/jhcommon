@@ -69,8 +69,22 @@ namespace JHCOM
 		float &getFloatRef() { return mData.mFloat; }
 		double getDouble() const { return mData.mDouble; }
 		double &getDoubleRef() { return mData.mDouble; }
-		JHCOM::ISupports *getObject() { return (JHCOM::ISupports *)mData.obj; }
-		const JHCOM::ISupports *getObject() const { return (JHCOM::ISupports *)mData.obj; }
+
+		void *getObject( const JHCOM::IID &iid ) 
+		{ 
+			if ( *mIID == iid )
+				return mData.obj; 
+			else
+				return NULL;
+		}
+		const void *getObject( const JHCOM::IID &iid ) const 
+		{ 
+			if ( *mIID == iid )
+				return mData.obj; 
+			else
+				return NULL;
+		}
+		
 		std::string &getString() { return mStr; }
 		const std::string &getString() const { return mStr; }
 	
@@ -124,6 +138,7 @@ namespace JHCOM
 		virtual void pushFloat( float num ) = 0;
 		virtual void pushDouble( double num ) = 0;
 		virtual void pushString( const std::string &str ) = 0;
+		virtual void pushObject( const JHCOM::IID &iid, JHCOM::ISupports *v ) = 0;
 
 		virtual char getParamChar( int param_num ) = 0;
 		virtual int16_t getParamInt16( int param_num ) = 0;
@@ -135,9 +150,10 @@ namespace JHCOM
 		virtual float getParamFloat( int param_num ) = 0;
 		virtual double getParamDouble( int param_num ) = 0;
 		virtual std::string &getParamString( int param_num ) = 0;
-		
+		virtual void *getParamObject( int param_num, const JHCOM::IID &iid ) = 0;
+	
 		virtual void reset() = 0;
-		virtual void call( int method_num ) = 0;
+		virtual void call( int method_num, bool async = false ) = 0;
 	};
 	
 	class VariantConnector : public IConnector
@@ -280,12 +296,12 @@ namespace JHCOM
 				return mParams[ param_num ].getString();
 		}
 	
-		JHCOM::ISupports *getParamObject( int param_num )
+		void *getParamObject( int param_num, const JHCOM::IID &iid )
 		{
 			if ( param_num == -1 )
-				return mReturnValue.getObject();
+				return mReturnValue.getObject( iid );
 			else
-				return mParams[ param_num ].getObject();
+				return mParams[ param_num ].getObject( iid );
 		}
 		
 		void reset()
@@ -298,7 +314,7 @@ namespace JHCOM
 		Variant mReturnValue;	
 	};
 	
-	class IHandler : public RefCount
+	class IInvoker : public RefCount
 	{
 	public:
 		virtual void call( int method_num, std::vector<Variant> &in_params, 

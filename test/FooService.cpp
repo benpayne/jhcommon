@@ -28,6 +28,7 @@
 #include "IFoo.h"
 #include "jh_memory.h"
 #include "logging.h"
+#include "ComponentManagerUtils.h"
 
 SET_LOG_CAT( LOG_CAT_ALL );
 SET_LOG_LEVEL( LOG_LVL_INFO );
@@ -35,6 +36,8 @@ SET_LOG_LEVEL( LOG_LVL_INFO );
 //
 //  FOO SERVICE
 //
+
+using namespace JHCOM;
 
 class FooService : public IFooService
 {
@@ -44,10 +47,8 @@ public:
 	
 	int Run();
 	
-	JHCOM_DECL_ISUPPORTS	
+	JHCOM_DECL_ISUPPORTS1(IFooService)
 };
-
-JHCOM_IMPL_ISUPPORTS1( FooService, IFooService )
 
 FooService::~FooService()
 {
@@ -72,10 +73,9 @@ public:
 	
 	int Run();
 	
-	JHCOM_DECL_ISUPPORTS	
+	JHCOM_DECL_ISUPPORTS1(IFoo)
+	JHCOM_DEFINE_CID("FooFactory")
 };
-
-JHCOM_IMPL_ISUPPORTS1( Foo, IFoo )
 
 Foo::~Foo()
 {
@@ -88,54 +88,28 @@ int Foo::Run()
 	return 0;
 }
 
-//
-// FOO FACTORY
-//
-
-class FooFactory : public IFactory
+class FooModule : public ModuleBase
 {
 public:
-	virtual ~FooFactory();
-	ErrorCode CreateInstance( CID cid, IID iid, void **object );
+	FooModule() : ModuleBase( "FooModule" ) {}
+
+	ErrorCode loadComponents()
+	{
+		getComponentManager()->AddService( "FooService", jh_new FooService );
+		getComponentManager()->AddService( "FooFactory", jh_new GenericFactory<Foo> );
+		return kNoError;
+	}
 	
-	JHCOM_DECL_ISUPPORTS	
+	ErrorCode unloadComponents()
+	{
+		getComponentManager()->RemoveService( "FooService" );
+		getComponentManager()->RemoveService( "FooFactory" );
+		return kNoError;
+	}	
 };
 
-JHCOM_IMPL_ISUPPORTS1( FooFactory, IFactory )
-
-FooFactory::~FooFactory()
-{
-	LOG_NOTICE( "FooFactory Dead" );
-}
-
-ErrorCode FooFactory::CreateInstance( CID cid, IID iid, void **object )
+IModule *JHCOM_GetModule()
 {
 	TRACE_BEGIN( LOG_LVL_NOTICE );
-	ISupports *supports = NULL;
-	ErrorCode result = kNoError;
-	
-	if ( cid == "FooFactory" )
-	{
-		supports = jh_new Foo();
-		result = supports->QueryInterface( iid, object );
-	}
-	else
-	{
-		result = kNoClass;
-	}
-	
-	return result;
-}
-
-ErrorCode JHCOM_RegisterServices( IComponentManager *mgr )
-{
-	TRACE_BEGIN( LOG_LVL_NOTICE );
-	
-	FooService *foo = jh_new FooService;
-	mgr->AddService( "FooService", foo );
-
-	FooFactory *fac = jh_new FooFactory;
-	mgr->AddService( "FooFactory", fac );
-	
-	return kNoError;
+	return jh_new FooModule;
 }

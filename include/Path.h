@@ -48,6 +48,13 @@ namespace JetHead
 		Path &operator=( const Path &path )  { mPath = path.mPath; return *this; }
 		Path &operator=( const URI &uri );
 		
+		bool operator==( const char *path ) { return mPath == path; }
+		bool operator==( const JHSTD::string &path ) { return mPath == path; }
+		bool operator==( const Path &path ) { return mPath == path.mPath; }
+		bool operator!=( const char *path ) { return mPath != path; }
+		bool operator!=( const JHSTD::string &path ) { return mPath != path; }
+		bool operator!=( const Path &path ) { return mPath != path.mPath; }
+		
 		bool append( const char *path ) { return append( JHSTD::string( path ) ); }
 		bool append( const JHSTD::string &path );
 		bool append( const Path &path ) { return append( path.mPath ); }
@@ -55,7 +62,7 @@ namespace JetHead
 		const JHSTD::string &getString() const { return mPath; }
 		
 		//! Return the path part of a file name ../../dir/file.so would return "../../dir"
-		JHSTD::string parent();
+		Path parent();
 
 		//! Return the path part of a file name ../../dir/file.so would return "file.so"
 		JHSTD::string filename();

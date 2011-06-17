@@ -1,7 +1,29 @@
+#include "ISupports.idl"
 
-interface ITest
-{
-  void PrintNumber( in long num );
-  void PrintName( in string name );
+[IID(ITest)]
+interface ITest : ISupports
+{	
+	char getChar();
+	int16_t getNum16();
+	uint16_t getNumU16();
+	int32_t getNum32();
+	uint32_t getNumU32();
+	int64_t getNum64();
+	uint64_t getNumU64();
+	float getNumFloat();
+	double getNumDouble();
+	string getString();
+
+	void Num16In( in int16_t num );
+	void Num16Out( out int16_t num );
+	void Num16Inout( inout int16_t num );
+
+	void NumU16In( in uint16_t num );
+	void NumU16Out( out uint16_t num );
+	void NumU16Inout( inout uint16_t num );
+	
+	void StringIn( in string name );
+	void StringOut( out string name );
+	void StringInout( inout string name );
 };
 

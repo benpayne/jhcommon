@@ -1,14 +1,30 @@
 /*
- *
- * Some crude tests for libIDL.
- *
- * Usage: tstidl <filename> [flags]
- *
- * if given, flags is read as (output_flags << 24) | parse_flags
- *
- * gcc `libIDL-config --cflags --libs` tstidl.c -o tstidl
- *
+ * Copyright (c) 2010, JetHead Development, Inc.
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the JetHead Development nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+ 
 #ifdef G_LOG_DOMAIN
 #  undef G_LOG_DOMAIN
 #endif
@@ -22,6 +38,8 @@
 
 #include "Reflect.h"
 #include "DumpCPlusPlus.h"
+#include "DumpXML.h"
+#include "File.h"
 #include "logging.h"
 
 SET_LOG_CAT( LOG_CAT_ALL );
@@ -126,13 +144,48 @@ const TypeInfo *getType( IDL_tree tree, void *data )
 	switch( IDL_NODE_TYPE( tree ) )
 	{
 		case IDLN_TYPE_INTEGER:
-			type = info->mTypes->findType( "int" );
-			break;
+		{	
+			switch( IDL_TYPE_INTEGER( tree ).f_type )
+			{
+				case IDL_INTEGER_TYPE_SHORT:
+					if ( IDL_TYPE_INTEGER( tree ).f_signed == 1 )
+						type = info->mTypes->findType( "int16_t" );
+					else
+						type = info->mTypes->findType( "uint16_t" );						
+					break;
+				case IDL_INTEGER_TYPE_LONG:
+					if ( IDL_TYPE_INTEGER( tree ).f_signed == 1 )
+						type = info->mTypes->findType( "int32_t" );
+					else
+						type = info->mTypes->findType( "uint32_t" );						
+					break;
+				case IDL_INTEGER_TYPE_LONGLONG:
+					if ( IDL_TYPE_INTEGER( tree ).f_signed == 1 )
+						type = info->mTypes->findType( "int64_t" );
+					else
+						type = info->mTypes->findType( "uint64_t" );						
+					break;
+			}
+		} break;
+			
 		case IDLN_TYPE_FLOAT:
-			type = info->mTypes->findType( "float" );
-			break;
+		{	
+			switch( IDL_TYPE_FLOAT( tree ).f_type )
+			{
+				case IDL_FLOAT_TYPE_FLOAT:
+					type = info->mTypes->findType( "float" );
+					break;
+				case IDL_FLOAT_TYPE_DOUBLE:
+					type = info->mTypes->findType( "double" );
+					break;
+				case IDL_FLOAT_TYPE_LONGDOUBLE:
+					type = info->mTypes->findType( "long double" );
+					break;
+			}
+		} break;
+
 		case IDLN_TYPE_CHAR:
-			type = info->mTypes->findType( "int" );
+			type = info->mTypes->findType( "char" );
 			break;
 		case IDLN_TYPE_STRING:
 			type = info->mTypes->findType( "string" );
@@ -150,12 +203,15 @@ const TypeInfo *getType( IDL_tree tree, void *data )
 			if ( type == NULL )
 				fprintf( stderr, "ERROR: Type not found %s\n", IDL_IDENT( tree ).str ); 
 			break;
+
+		case IDLN_TYPE_ANY:
+			type = info->mTypes->findType( "any" );
+			break;
 			
 		case IDLN_TYPE_FIXED:
 		case IDLN_TYPE_WIDE_CHAR:
 		case IDLN_TYPE_WIDE_STRING:
 		case IDLN_TYPE_OCTET:
-		case IDLN_TYPE_ANY:
 		case IDLN_TYPE_OBJECT:
 		case IDLN_TYPE_TYPECODE:
 		case IDLN_TYPE_ENUM:
@@ -286,7 +342,7 @@ int typedefDcl( IDL_tree node, void *data )
 	
 	if ( IDL_NODE_TYPE( node ) == IDLN_IDENT )
 	{
-		SmartPtr<TypeInfo> type = new TypeInfo( new Alias( IDL_IDENT( node ).str, info->mType ) );
+		SmartPtr<TypeInfo> type = new TypeInfo( IDL_IDENT( node ).str, new Alias( info->mType ) );
 		info->mTypes->addType( type );
 		type->setFileInfo( node->_file, node->_line );
 
@@ -342,7 +398,9 @@ int processTree( IDL_tree tree, void *data )
 			fprintf( stderr, "ERROR, can't scope interface inside another interface\n" );
 		
 		info->mCurrentClass = new ClassInfo( IDL_IDENT( IDL_INTERFACE(tree).ident ).str );
-		SmartPtr<TypeInfo> type = new TypeInfo( TypeInfo::TYPE_INTERFACE, info->mCurrentClass );
+		SmartPtr<TypeInfo> type = new TypeInfo( 
+			IDL_IDENT( IDL_INTERFACE(tree).ident ).str,
+			TypeInfo::TYPE_INTERFACE, info->mCurrentClass );
 		info->mTypes->addType( type );
 		type->setFileInfo( tree->_file, tree->_line );
 				
@@ -355,10 +413,13 @@ int processTree( IDL_tree tree, void *data )
 		
 			processTree( IDL_INTERFACE(tree).body, data );
 			
-			//const char *val = IDL_tree_property_get( IDL_INTERFACE(tree).ident, "IID" );
-			//if ( val != NULL )
-			//	fprintf( info->output, "\n\tJHCOM_DEFINE_IID( \"%s\" );\n", val );
-						
+			const char *val = IDL_tree_property_get( IDL_INTERFACE(tree).ident, "IID" );
+			if ( val != NULL )
+			{
+				std::string v = val;
+				info->mCurrentClass->setIID( v );
+			}
+			
 			info->mCurrentClass->setConcrete();
 		}
 
@@ -408,7 +469,9 @@ int processTree( IDL_tree tree, void *data )
 	else if ( IDL_NODE_TYPE(tree) == IDLN_TYPE_STRUCT )
 	{
 		info->mCurrentStruct = new ClassInfo( IDL_IDENT( IDL_TYPE_STRUCT(tree).ident ).str );
-		SmartPtr<TypeInfo> type = new TypeInfo( TypeInfo::TYPE_STRUCT, info->mCurrentStruct );
+		SmartPtr<TypeInfo> type = new TypeInfo( 
+			 IDL_IDENT( IDL_TYPE_STRUCT(tree).ident ).str,
+			 TypeInfo::TYPE_STRUCT, info->mCurrentStruct );
 		info->mTypes->addType( type );
 		type->setFileInfo( tree->_file, tree->_line );
 		if ( info->mCurrentClass != NULL )
@@ -421,8 +484,9 @@ int processTree( IDL_tree tree, void *data )
 	}
 	else if ( IDL_NODE_TYPE(tree) == IDLN_TYPE_ENUM )
 	{
-		info->mCurrentEnum = new Enumeration( IDL_IDENT( IDL_TYPE_ENUM(tree).ident ).str );
-		SmartPtr<TypeInfo> type = new TypeInfo( info->mCurrentEnum );
+		info->mCurrentEnum = new Enumeration();
+		SmartPtr<TypeInfo> type = new TypeInfo( 
+			IDL_IDENT( IDL_TYPE_ENUM(tree).ident ).str, info->mCurrentEnum );
 		info->mTypes->addType( type );
 		type->setFileInfo( tree->_file, tree->_line );
 		if ( info->mCurrentClass != NULL )
@@ -467,6 +531,70 @@ int	msg_callback(int level,
 	return 0;
 }
 
+static void findIncludes( const char *filename, std::vector<std::string> &include )
+{
+	TRACE_BEGIN( LOG_LVL_INFO );
+	JetHead::File idl;
+	int state = 1;  // start at new line so state is 1.
+	
+	LOG( "Checking includes in %s", filename );
+	
+	int res = idl.open( filename );
+	ASSERT_ERR( res == 0, "Failed to open file %d", res );
+
+	const char *data = (const char *)idl.mmap();
+	
+	for ( int i = 0; i < idl.getLength(); i++ )
+	{
+		switch( data[ i ] )
+		{
+			case '\n':
+				state = 1;
+				break;
+			
+			case '#':
+				if ( state == 1 )
+				{
+					int j = i + 8;
+					while( j < idl.getLength() && data[ j ] != '\n' )
+						j++;
+					
+					std::string line( data + i, j - i );
+					std::string file;
+					
+					if ( line.find( "#include" ) == 0 )
+					{
+						unsigned start = line.find( "\"", 8 );
+						unsigned end = 0;
+						if ( start == std::string::npos )
+						{	
+							start = line.find( "<", 8 );
+							ASSERT_ERR( start != std::string::npos, "Failed to parse start of include" );
+							end = line.find( ">", start + 1 );
+						}
+						else
+						{
+							end = line.find( "\"", start + 1 );
+						}
+						
+						ASSERT_ERR(  end != std::string::npos, "Failed to parse end of include" );
+						
+						LOG( "start = %d, end = %d", start, end );
+						
+						file.assign( line, start + 1, end - start - 1 );
+
+						LOG( "Include file %s", file.c_str() );
+						include.push_back( file );
+					}
+				}
+				break;
+				
+			default:
+				state = 0;
+				break;
+		}
+	}
+}
 
 int main (int argc, char *argv[])
 {
@@ -512,10 +640,16 @@ int main (int argc, char *argv[])
 	IDL_tree_free( data.tree );
 
 	data.mTypes->dumpTypes();
+
+	std::vector<std::string> includes;
 	
-	DumpCPlusPlus d( data.filename, data.mTypes );
+	findIncludes( data.filename, includes );
 	
-	d.Dump();
+	DumpCPlusPlus dcpp( data.filename, data.mTypes );
+	DumpXML dxml( data.filename, data.mTypes );
+	
+	dcpp.Dump( includes );
+	dxml.Dump( includes );
 	
 	return 0;
 }

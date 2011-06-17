@@ -30,6 +30,7 @@
 
 #include "JHCOM.h"
 #include "jh_list.h"
+#include <string>
 
 using namespace JHCOM;
 
@@ -39,6 +40,10 @@ public:
 	ComponentManager();
 	
 	ErrorCode LoadLibrary( const char *name );	
+	ErrorCode RemoveModule( const char *name );
+
+	IModule *GetModule( const char *name );
+	ErrorCode UnloadLibrary( CID cid );
 
 	ErrorCode CreateInstance( CID cid, IID iid, void **object );	
 	ErrorCode GetService( CID cid, IID iid, void **object );	
@@ -46,7 +51,7 @@ public:
 	ErrorCode AddService( CID cid, ISupports *service );	
 	ErrorCode RemoveService( CID cid );
 
-	JHCOM_DECL_ISUPPORTS
+	JHCOM_DECL_ISUPPORTS1( IComponentManager )
 
 protected:
 	virtual ~ComponentManager();
@@ -61,8 +66,31 @@ private:
 		CID	mCid;
 		ISupports *mClass;
 	};
-	
+
+	struct ModuleInfo
+	{
+		ModuleInfo( const std::string &name, IModule *object = NULL, void *handle = NULL ) : 
+			mName( name ), mModule( object ), mHandle( handle ) {}
+		
+		bool operator==( ModuleInfo &other ) { return other.mName == mName; }
+		
+		bool operator==( CID &cid ) 
+		{ 
+			if ( mModule == NULL ) 
+				return false;
+			else
+				return cid == mModule->getCID(); 
+		}
+		
+		std::string	mName;
+		IModule *mModule;
+		void *mHandle;
+	};
+
+	ModuleInfo *getModInfo( const char *name );
+		
 	JetHead::list<ClassInfo*> mClasses;
+	JetHead::list<ModuleInfo*> mModules;
 };
 
 

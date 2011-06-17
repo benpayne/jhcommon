@@ -9,7 +9,7 @@ enum GlobalEnum {
 struct Test1
 {
   long p;
-  string a[ 2 ];
+  string a[ 4 ];
 };
 
 struct Test
