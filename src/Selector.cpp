@@ -97,7 +97,7 @@ void Selector::shutdown()
 	}
 }
 
-void Selector::addListener( int fd, short events, SelectorListener *listener, unsigned long private_data )
+void Selector::addListener( int fd, short events, SelectorListener *listener, jh_ptr_int_t private_data )
 {
 	TRACE_BEGIN( LOG_LVL_INFO );
 
@@ -383,7 +383,7 @@ bool Selector::callListeners( int fd, uint32_t events )
 			//  events are recieved.  So we will get any data we 
 			//  need from it now. 
 			SelectorListener *interface = (*listener)->mListener;
-			uint32_t pd = (*listener)->mPrivateData;
+			jh_ptr_int_t pd = (*listener)->mPrivateData;
 		
 			if ( events & ( POLLHUP | POLLNVAL ) )
 			{	
