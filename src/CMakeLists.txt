@@ -6,8 +6,8 @@ add_library(jhcommon SHARED Allocator.cpp AppArgs.cpp CircularBuffer.cpp Conditi
 		     Thread.cpp Timer.cpp URI.cpp jh_memory.cpp logging.cpp)
 		     
 add_library(jhcomserver SHARED ComponentManager.cpp ComponentManagerUtils.cpp)
-target_link_libraries(jhcomserver jhcommon )
+target_link_libraries(jhcomserver jhcommon ${JHCOM_LIBS} )
 
 add_library(jhcomclient SHARED ComponentManager.cpp ComponentManagerUtils.cpp)
-target_link_libraries(jhcomclient jhcommon )
+target_link_libraries(jhcomclient jhcommon ${JHCOM_LIBS} )
 
