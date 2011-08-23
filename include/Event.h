@@ -38,6 +38,7 @@ enum {
 
 class EventQueue;
 class EventAgent;
+class Timer;
 
 /**
  * An Event class.  Your should use postive event id's.  negative event id are
@@ -111,12 +112,16 @@ public:
 	/**
 	 * Send a event at a later time.
 	 */
-	virtual void sendTimedEvent( Event *ev, uint32_t msecs ) = 0;
+	virtual void sendTimedEvent( Event *ev,
+								 uint32_t msecs,
+								 Timer* timer = NULL ) = 0;
 	
 	/**
 	 * Send a recurring event with a regular period
 	 */
-	virtual void sendPeriodicEvent( Event *ev, uint32_t msecs ) = 0;
+	virtual void sendPeriodicEvent( Event *ev,
+									uint32_t msecs,
+									Timer* timer = NULL ) = 0;
 	
 	/**
 	 * Remove all events with the eventId from the queue

@@ -28,6 +28,8 @@
 #include "EventThread.h"
 #include "Selector.h"
 #include "Timer.h"
+#include "TimeUtils.h"
+#include "EventAgent.h"
 
 #include "jh_memory.h"
 #include "logging.h"
@@ -47,32 +49,50 @@ int gEventCount = 0;
 
 struct Event1 : public Event
 {
-	Event1() : Event( EVENT_ID_EV1, PRIORITY_HIGH ) { gEventCount++; }		
-	~Event1() { gEventCount--; }		
+	Event1()
+	: Event( EVENT_ID_EV1, PRIORITY_HIGH )
+	{
+		gEventCount++;
+		TimeUtils::getCurTime(&mSent);
+	}		
+	virtual ~Event1() { gEventCount--; }
+	
 	SMART_CASTABLE( EVENT_ID_EV1 );
+	
+	struct timeval mSent;
 };
 
 struct Event2 : public Event
 {
 	Event2( uint32_t p1, uint16_t p2 )
-		: Event( EVENT_ID_EV2 ), mP1( p1 ), mP2( p2 ) { gEventCount++; }
-	~Event2() { gEventCount--; }		
+	: Event( EVENT_ID_EV2 ), mP1( p1 ), mP2( p2 )
+	{
+		gEventCount++;
+		TimeUtils::getCurTime(&mSent);
+	}		
+	virtual ~Event2() { gEventCount--; }		
 		
 	SMART_CASTABLE( EVENT_ID_EV2 );
 	
 	uint32_t mP1;
 	uint16_t mP2;
+	struct timeval mSent;
 };
 
 struct Event3 : public Event
 {
-	Event3( uint32_t p1 )
-		: Event( EVENT_ID_EV3 ), mP1( p1 ) { gEventCount++; }
-	~Event3() { gEventCount--; }		
+	Event3( Timer* timer )
+	: Event( EVENT_ID_EV3 ), mTimer( timer )
+	{
+		gEventCount++;
+		TimeUtils::getCurTime(&mSent);
+	}
+	virtual ~Event3() { gEventCount--; }		
 		
 	SMART_CASTABLE( EVENT_ID_EV3 );
 	
-	uint32_t mP1;
+	Timer* mTimer;
+	struct timeval mSent;
 };
 
 class TestClass : public TimerListener
@@ -85,13 +105,14 @@ public:
 
 	void Func1();
 	void Func2( uint32_t p1, uint16_t p2 );
-	void Func3( uint32_t p1 );
+	void Func3( Timer* timer = NULL );
 	void Cancel2();
-
+	void sendPeriodic( Timer* timer = NULL );
 private:
 	void ProcessFunc1( Event1 *ev );
 	void ProcessFunc2( Event2 *ev );
 	void ProcessFunc3( Event3 *ev );
+	void handlePeriodic();
 
 	EventMethod<TestClass,Event1>  *mEvent1Handler;
 	EventMethod<TestClass,Event2>  *mEvent2Handler;
@@ -99,13 +120,19 @@ private:
 
 	Selector mThread;
 //	EventThread mThread;
-	TimerManager *mTimer;
+	Timer *mDefaultTimer;
+	
+	struct timeval mLastTime;
+	
+	SmartPtr<AsyncEventAgent> mPeriodEvent;
+	int mPeriodElapsed;
+	int mPeriodCount;
 };
 
 
 TestClass::TestClass()
 {
-	mTimer = TimerManager::getInstance();
+	mDefaultTimer = TimerManager::getInstance()->getDefaultTimer();
 
 	mEvent1Handler = jh_new EventMethod<TestClass,Event1>(
 		this, &TestClass::ProcessFunc1, &mThread );
@@ -113,11 +140,16 @@ TestClass::TestClass()
 		this, &TestClass::ProcessFunc2, &mThread );
 	mEvent3Handler = jh_new EventMethod<TestClass,Event3>(
 		this, &TestClass::ProcessFunc3, &mThread );
+	mPeriodEvent = jh_new AsyncEventAgent0<TestClass>(
+		this, &TestClass::handlePeriodic );
 		
-	mTimer->addTimer( this, 2000, 2345 );
-	mTimer->addTimer( this, 500, 1234 );
-	mTimer->addTimer( this, 3500, 4567 );
-	mTimer->addTimer( this, 2500, 3456 );
+	mDefaultTimer->addTimer( this, 2000, 2345 );
+	mDefaultTimer->addTimer( this, 500, 1234 );
+	mDefaultTimer->addTimer( this, 3500, 4567 );
+	mDefaultTimer->addTimer( this, 2500, 3456 );
+	
+	mPeriodElapsed = 0;
+	mPeriodCount = 0;
 }
 
 TestClass::~TestClass()
@@ -126,6 +158,7 @@ TestClass::~TestClass()
 	delete mEvent2Handler;
 	delete mEvent3Handler;
 	
+	mThread.removeAll();
 	TimerManager::destroyManager();
 }
 
@@ -133,7 +166,7 @@ static bool firstFunc1 = true;
 
 void TestClass::onTimeout( uint32_t private_data )
 {
-	TRACE_BEGIN( LOG_LVL_INFO );
+	TRACE_BEGIN( LOG_LVL_NOISE );
 	LOG( "private_data %d", private_data );
 	
 	// Make sure we can add and remove from the TimerManager while we are
@@ -146,7 +179,7 @@ void TestClass::onTimeout( uint32_t private_data )
 		mThread.remove( Event2::GetEventId() );
 		
 		LOG( "\n\nAdding timeout from clockthread context\n\n" );
-		mTimer->addTimer( this, 2000, 6669 );
+		mDefaultTimer->addTimer( this, 2000, 6669 );
 		
 		LOG( "\n\nCalling Func1 and Func2 again to resend timed events\n\n");
 		Func1();
@@ -157,19 +190,30 @@ void TestClass::onTimeout( uint32_t private_data )
 void TestClass::Func1()
 {
 	// Send event via EventThread (proper way to use timed events)
-	mThread.sendTimedEvent( jh_new Event1(), 2000 );
+	mThread.sendTimedEvent( jh_new Event1(), 3000 );
 }
 
 void TestClass::Func2( uint32_t p1, uint16_t p2 )
 {
 	// Send event via TimerManager.  Also works but not recommended
-	mTimer->sendTimedEvent( jh_new Event2( p1, p2 ), &mThread, 2000 );
+	mDefaultTimer->sendTimedEvent( jh_new Event2( p1, p2 ), &mThread, 3500 );
 }
 
-void TestClass::Func3( uint32_t p1 )
+void TestClass::Func3( Timer* timer )
 {
-	// Useless function?
-	mThread.sendEventSync( jh_new Event3( p1 ) );
+	// Send using either specified timer or the default timer
+	if ( timer == NULL )           
+	{
+		timer = mDefaultTimer;
+	}
+	timer->sendTimedEvent( jh_new Event3( timer ), &mThread, 200 );
+}
+
+void TestClass::sendPeriodic( Timer* testTimer )
+{
+	sleep(2);
+	mPeriodEvent->sendPeriodically( &mThread, 166, testTimer );
+	TimeUtils::getCurTime(&mLastTime);
 }
 
 void TestClass::Cancel2()
@@ -184,16 +228,22 @@ void TestClass::ProcessFunc1( Event1 *ev )
 {
 	TRACE_BEGIN( LOG_LVL_INFO );
 	
+	struct timeval curTime;
+	TimeUtils::getCurTime( &curTime );
+	
+	int elapsed = TimeUtils::getDifference( &curTime, &ev->mSent );
+	
+	LOG("Received Func1 timed event, elapsed time is %d", elapsed);
 	// Run once
 	if (firstFunc1)
 	{
 		// Event2 should be coming immediately following this call.  Try to
 		// remove it before it arrives
-		LOG( "\n\nReceived Func1 timeout, remove Func2 timed event(s)\n\n" );
+		LOG( "Received Func1 timeout, remove Func2 timed event(s)" );
 		Cancel2();
 		
 		// Now re-send both events
-		LOG( "\n\nAnd... do Func1, Func2 again\n\n" );
+		LOG( "And... do Func1, Func2 again" );
 		Func1();
 		Func2( 15, 20 );
 		
@@ -205,12 +255,39 @@ void TestClass::ProcessFunc2( Event2 *ev )
 {
 	TRACE_BEGIN( LOG_LVL_INFO );
 	LOG_NOTICE( "p1 %d p2 %d", ev->mP1, ev->mP2 );
+	struct timeval curTime;
+	TimeUtils::getCurTime( &curTime );
+	
+	int elapsed = TimeUtils::getDifference( &curTime, &ev->mSent );
+	
+	LOG("Received Func2 timed event, elapsed time is %d", elapsed);
 }
 
 void TestClass::ProcessFunc3( Event3 *ev )
 {
 	TRACE_BEGIN( LOG_LVL_INFO );
-	LOG_NOTICE( "p1 %d", ev->mP1 );
+	
+	struct timeval curTime;
+	TimeUtils::getCurTime( &curTime );
+	
+	int elapsed = TimeUtils::getDifference( &curTime, &ev->mSent );
+	LOG_NOTICE( "Timer %p with tick time %d, elapsed is %d\n",
+				ev->mTimer, ev->mTimer->getTickTime(), elapsed );
+}
+
+void TestClass::handlePeriodic()
+{
+	TRACE_BEGIN( LOG_LVL_INFO );
+	
+	struct timeval curTime;
+	TimeUtils::getCurTime( &curTime );
+	
+	int elapsed = TimeUtils::getDifference( &curTime, &mLastTime );
+	mPeriodElapsed += elapsed;
+	mPeriodCount++;
+	LOG_NOTICE( "Periodic elapsed is %d, total periodic is %d, total elapsed is %d\n",
+				elapsed, mPeriodCount, mPeriodElapsed );
+	mLastTime = curTime;
 }
 
 int main( int argc, char*argv[] )
@@ -218,16 +295,28 @@ int main( int argc, char*argv[] )
 	LOG_NOTICE( "Test Started" );
 
 	TestClass *c = jh_new TestClass;
+	SmartPtr<Timer> testTimer = jh_new Timer(166);
 
 	// Initiate test by making back-to-back calls to Func1 and Func2
 	c->Func1();
 	c->Func2( 5, 10 );
+	
+	// Send two timed events.  One using default timer, one using
+	// a timer with a resolution of 50ms.   Timed event is set to
+	// fire after 250ms.   Default timer should actually be ~200
+	// and testTimer should be ~250
+	c->Func3();
+	c->Func3( testTimer );
+	
+	c->sendPeriodic( testTimer );
 	
 	// Wait for a while until the test completes
 	sleep( 10 );
 	
 	LOG_NOTICE( "Sleep done" );
 	
+	testTimer->stop();
+	testTimer = NULL;
 	delete c;
 	
 	if ( gEventCount != 0 )

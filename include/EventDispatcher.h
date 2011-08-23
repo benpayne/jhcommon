@@ -80,12 +80,12 @@ public:
 	/**
 	 * Send a event at a later time.
 	 */
-	void sendTimedEvent( Event *ev, uint32_t msecs );
+	void sendTimedEvent( Event *ev, uint32_t msecs, Timer* timer = NULL );
 
 	/**
 	 * Send a recurring Event with a regular period
 	 */
-	void sendPeriodicEvent( Event *ev, uint32_t msecs );
+	void sendPeriodicEvent( Event *ev, uint32_t msecs, Timer* timer = NULL );
 
 	/**
 	 * Remove all events with given eventId

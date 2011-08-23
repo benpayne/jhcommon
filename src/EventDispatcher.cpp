@@ -175,17 +175,24 @@ void EventDispatcher::sendEvent( Event *ev )
 	wakeThread();
 }
 
-void EventDispatcher::sendTimedEvent( Event *ev, uint32_t msecs )
+void EventDispatcher::sendTimedEvent( Event *ev, uint32_t msecs, Timer* timer)
 {
 	TRACE_BEGIN( LOG_LVL_NOISE );
-	TimerManager *timer = TimerManager::getInstance();
+	if ( timer == NULL )
+	{
+		timer = TimerManager::getInstance()->getDefaultTimer();
+	}
 	timer->sendTimedEvent( ev, this, msecs );
 }
 
-void EventDispatcher::sendPeriodicEvent( Event *ev, uint32_t msecs )
+void EventDispatcher::sendPeriodicEvent( Event *ev, uint32_t msecs, Timer* timer)
 {
 	TRACE_BEGIN( LOG_LVL_NOISE );
-	TimerManager *timer = TimerManager::getInstance();
+	
+	if ( timer == NULL )
+	{
+		timer = TimerManager::getInstance()->getDefaultTimer();
+	}
 	timer->sendPeriodicEvent( ev, this, msecs );
 }
 
@@ -207,11 +214,11 @@ int EventDispatcher::remove( Event::Id eventId )
 		return e->send(this);
 	}
 
-	// It is important that we remove events from the TimerManager first.  
+	//  It is important that we remove events from the TimerManager first.
 	//  This ensure that an event does not get dispatched to the queue after we
 	//  clear the queue.
-	TimerManager *timer = TimerManager::getInstance();
-	timer->removeTimedEvent( eventId, this );
+	TimerManager *timerMan = TimerManager::getInstance();
+	timerMan->removeTimedEvent( eventId, this );
 	mQueue.Remove( eventId );	
 	return 0;
 }
@@ -233,11 +240,11 @@ int EventDispatcher::remove( Event *ev )
 		return e->send(this);
 	}
 
-	// It is important that we remove events from the TimerManager first.  
+	//  It is important that we remove events from the TimerManager first.  
 	//  This ensure that an event does not get dispatched to the queue after we
 	//  clear the queue.
-	TimerManager *timer = TimerManager::getInstance();
-	timer->removeTimedEvent( ev );
+	TimerManager *timerMan = TimerManager::getInstance();
+	timerMan->removeTimedEvent( ev );
 	mQueue.Remove( ev );	
 	return 0;
 }
@@ -259,8 +266,8 @@ int EventDispatcher::removeAgentsByReceiver(void* recipient)
 		return e->send(this);
 	}
 
-	TimerManager *timer = TimerManager::getInstance();
-	timer->removeAgentsByReceiver(recipient, this);
+	TimerManager *timerMan = TimerManager::getInstance();
+	timerMan->removeAgentsByReceiver(recipient, this);
 	mQueue.RemoveAgentsByReceiver(recipient);
 	return 0;
 }
@@ -284,8 +291,8 @@ int EventDispatcher::removeAll()
 
 	// Same a remove exept we give TimerManager an invalid id so that he will
 	//  remove all events for this dispatcher.
-	TimerManager *timer = TimerManager::getInstance();
-	timer->removeTimedEvent( Event::kInvalidEventId, this );
+	TimerManager *timerMan = TimerManager::getInstance();
+	timerMan->removeTimedEvent( Event::kInvalidEventId, this );
 	mQueue.Flush();
 	return 0;
 }

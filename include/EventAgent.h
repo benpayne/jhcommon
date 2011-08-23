@@ -155,17 +155,21 @@ public:
 	/**
 	 *	@brief Dispatch timed asynchronously to the dispatcher specified
 	 */
-	void sendTimed(IEventDispatcher *dispatcher, uint32_t msecs)
+	void sendTimed(IEventDispatcher *dispatcher,
+				   uint32_t msecs,
+				   Timer* timer = NULL)
 	{
-		dispatcher->sendTimedEvent(this, msecs);
+		dispatcher->sendTimedEvent(this, msecs, timer);
 	}
 	
 	/**
 	 *	@brief Dispatch periodically to the dispatcher specified
 	 */
-	void sendPeriodically(IEventDispatcher *dispatcher, uint32_t msecs)
+	void sendPeriodically(IEventDispatcher *dispatcher,
+						  uint32_t msecs,
+						  Timer* timer = NULL)
 	{
-		dispatcher->sendPeriodicEvent(this, msecs);
+		dispatcher->sendPeriodicEvent(this, msecs, timer);
 	}		
 	
 	/**

@@ -25,14 +25,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "jh_types.h"
 #include "Timer.h"
-#include "logging.h"
-#include "jh_memory.h"
+#include "TimerManager.h"
 #include "Condition.h"
 #include "Mutex.h"
 #include "TimeUtils.h"
 #include "EventAgent.h"
+
+#include "jh_memory.h"
+#include "jh_types.h"
+#include "logging.h"
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -41,50 +43,100 @@
 SET_LOG_CAT( LOG_CAT_ALL );
 SET_LOG_LEVEL( LOG_LVL_NOTICE );
 
-TimerManager *TimerManager::mSingleton = NULL;
 
-TimerManager *TimerManager::getInstance()
+Timer::Timer(int tickTimeMs, bool stoppable)
+:	mClockThread(NULL),
+	mMsPerTick(tickTimeMs),
+	mStoppable(stoppable),
+	mMutex(true),
+	mTicks(0)
 {
-	TRACE_BEGIN( LOG_LVL_INFO );
-	if ( mSingleton == NULL ) 
-		mSingleton = jh_new TimerManager;
-	return mSingleton; 
+	TRACE_BEGIN(LOG_LVL_INFO);
+	
+	// If a negative tick time is specified then use 100ms
+	if (mMsPerTick < 0)
+		mMsPerTick = 100;
+	
+	// Start the timer thread running immediately
+	start();
 }
 
+Timer::~Timer()
+{
+	TRACE_BEGIN(LOG_LVL_INFO);
+	
+	// Force stop of this timer
+	doStop();
+	
+	// Remove the Timer from the TimerManager
+	TimerManager::getInstance()->removeTimer(this);
+	
+}
 
-void TimerManager::destroyManager() 
-{ 
-	if (mSingleton != NULL)
+int Timer::getTickTime()
+{
+	return mMsPerTick;
+}
+
+void Timer::start()
+{
+	TRACE_BEGIN(LOG_LVL_NOISE);
+	
+	// If the clock thread is already running then the
+	if (mClockThread != NULL)
+		return;
+	
+	// Because we don't prevent additions to our timer list during
+	// periods where the timer is stopped we need to reset, which
+	// clears the timeout list and resets ticks to 0
+	reset();
+	
+	mClockThread = jh_new Runnable<Timer>("clockThread",
+										  this,
+										  &Timer::clockHandler);
+	mClockThread->Start();
+	
+}
+
+void Timer::stop()
+{
+	TRACE_BEGIN(LOG_LVL_NOISE);
+	
+	if (mStoppable == true)
 	{
-		delete mSingleton; 
-		mSingleton = NULL;
+		doStop();
+	}
+	else
+	{
+		LOG_WARN("Attempted to stop Timer %p that is not stoppable", this);
 	}
 }
 
-
-TimerManager::TimerManager() : mMutex( true ), mTicks( 0 )
+void Timer::doStop()
 {
-	TRACE_BEGIN( LOG_LVL_NOTICE );
-
-	if ( mSingleton != NULL )
-		LOG_ERR_FATAL( "Don't create a timer manager use getInstance()" );
+	TRACE_BEGIN(LOG_LVL_NOISE);
 	
-	mClockThread = jh_new Runnable<TimerManager>("clockThread", this,
-												 &TimerManager::clockHandler);
-	mClockThread->Start();
+	if (mClockThread != NULL)
+	{
+		// First stop the clock thread and join it
+		mClockThread->Stop();
+		mClockThread->Join();
+		delete mClockThread;
+		mClockThread = NULL;
+	}
 }
 
-TimerManager::~TimerManager()
+void Timer::reset()
 {
-	TRACE_BEGIN( LOG_LVL_NOTICE );
-
-	mClockThread->Stop();
-	mClockThread->Join();
+	TRACE_BEGIN(LOG_LVL_NOISE);
 	
-	delete mClockThread;
+	DebugAutoLock(mMutex);
+	
+	mTicks = 0;
+	mList.clear();
 }
 
-void TimerManager::clockHandler()
+void Timer::clockHandler()
 {
 	TRACE_BEGIN( LOG_LVL_INFO );	
 	struct timespec start, cur;
@@ -96,7 +148,7 @@ void TimerManager::clockHandler()
 	while ( !mClockThread->CheckStop() )
 	{	
 		// Wait for the tick to timeout
-		if (not c.Wait(m, kMsPerTick))
+		if (not c.Wait(m, mMsPerTick))
 		{
 			TimeUtils::getCurTime( &cur );
 			
@@ -113,10 +165,10 @@ void TimerManager::clockHandler()
 			else
 			{	
 				// Get the current time and count ticks until cur time and the 
-				//  actual tick time are less the kMsPerTick apart.
-				while ( TimeUtils::getDifference( &cur, &start ) > kMsPerTick )
+				// actual tick time are less the mMsPerTick apart.
+				while ( TimeUtils::getDifference( &cur, &start ) > mMsPerTick )
 				{
-					TimeUtils::addOffset( &start, kMsPerTick );
+					TimeUtils::addOffset( &start, mMsPerTick );
 					handleTick();
 				}
 			}
@@ -128,15 +180,13 @@ void TimerManager::clockHandler()
 	}
 }
 
-void TimerManager::handleTick()
+void Timer::handleTick()
 {
 	TRACE_BEGIN( LOG_LVL_NOISE );
 	
 	DebugAutoLock( mMutex );
 	
 	mTicks++;
-	
-	LOG( "%d ticks, %d items in list", mTicks, mList.size() );
 	
 	TimerNode timer;
 	
@@ -162,36 +212,36 @@ void TimerManager::handleTick()
 		// Otherwise send the event
 		else
 		{
-			if (timer.mRepeatMS == 0)
-			{
-				// Send the event to the specified dispatcher and
-				// release our reference to the event
-				timer.mDispatcher->sendEvent( timer.mEvent );				
-
-				timer.mEvent = NULL;
-			}
-			else
-			{
-				// Send the periodic event
-				timer.mDispatcher->sendEvent( timer.mEvent );
-			}
+			// Send the event to the specified dispatcher
+			timer.mDispatcher->sendEvent( timer.mEvent );
 		}
 		
-		// We need to re-send it in a few ticks		
+		// Check to see if this is a periodic timer.   If it is then
+		// we need to re-calculate the tick value for the timer.  In
+		// addition we are going to calculate the # of ms that are
+		// lost by the tick calculation and accumulate them so that
+		// over time we line up properly whenever possible.
 		if (timer.mRepeatMS != 0)
 		{
-			unsigned newTicks = (timer.mRepeatMS + kMsPerTick - 1 - 
-								 timer.mRemainingMS) / kMsPerTick;
+			unsigned newTicks = (timer.mRepeatMS + mMsPerTick - 1 - 
+								 timer.mRemainingMS) / mMsPerTick;
 			timer.mTick += newTicks;
 			timer.mRemainingMS = (timer.mRepeatMS + timer.mRemainingMS) % 
-				kMsPerTick;
+				mMsPerTick;
 			addTimerNode(timer);
+		}
+		// If this is a non-periodic then release our reference to
+		// the event if we have one
+		else
+		{
+			timer.mEvent = NULL;
 		}
 	}
 }
 
-void TimerManager::addTimer( TimerListener *listener, uint32_t msecs,
-							 uint32_t private_data )
+void Timer::addTimer( TimerListener *listener,
+					  uint32_t msecs,
+					  uint32_t private_data )
 {
 	TRACE_BEGIN( LOG_LVL_NOISE );
 	
@@ -200,7 +250,7 @@ void TimerManager::addTimer( TimerListener *listener, uint32_t msecs,
 	if (listener == NULL) abort();
 
 	// Calculate the timeout time in ticks
-	uint32_t ticks = ( msecs +  kMsPerTick - 1 ) / kMsPerTick;
+	uint32_t ticks = ( msecs +  mMsPerTick - 1 ) / mMsPerTick;
 	
 	// Initialize new timer node
 	TimerNode timer;
@@ -217,15 +267,45 @@ void TimerManager::addTimer( TimerListener *listener, uint32_t msecs,
 	addTimerNode( timer );
 }
 
-void TimerManager::sendTimedEvent( Event *event, IEventDispatcher *dispatcher,
-								   uint32_t msecs )
+void Timer::addPeriodicTimer( TimerListener *listener,
+							  uint32_t period,
+							  uint32_t private_data )
+{
+	TRACE_BEGIN( LOG_LVL_NOISE );
+	
+	DebugAutoLock( mMutex );
+
+	if (listener == NULL) abort();
+
+	// Calculate the timeout time in ticks
+	uint32_t ticks = ( period +  mMsPerTick - 1 ) / mMsPerTick;
+	
+	// Initialize new timer node
+	TimerNode timer;
+	timer.mEvent = NULL;
+	timer.mDispatcher = NULL;
+	timer.mPrivateData = private_data;
+	timer.mListener = listener;
+	timer.mTick = mTicks + ticks;
+	timer.mRepeatMS = period;
+	timer.mRemainingMS = 0;	
+
+	LOG( "timer at %d ticks", timer.mTick );
+
+	addTimerNode( timer );
+	
+}
+
+void Timer::sendTimedEvent( Event *event,
+							IEventDispatcher *dispatcher,
+							uint32_t msecs )
 {
 	TRACE_BEGIN( LOG_LVL_NOISE );
 		
 	DebugAutoLock( mMutex );
 	
 	// Calculate the timeout time in ticks
-	uint32_t ticks = ( msecs +  kMsPerTick - 1 ) / kMsPerTick;
+	uint32_t ticks = ( msecs +  mMsPerTick - 1 ) / mMsPerTick;
 	
 	// Initialize new timer node
 	TimerNode timer;
@@ -242,16 +322,16 @@ void TimerManager::sendTimedEvent( Event *event, IEventDispatcher *dispatcher,
 	addTimerNode( timer );
 }
 
-void TimerManager::sendPeriodicEvent( Event *event, 
-									  IEventDispatcher *dispatcher,
-									  uint32_t period )
+void Timer::sendPeriodicEvent( Event *event,
+							   IEventDispatcher *dispatcher,
+							   uint32_t period )
 {
 	TRACE_BEGIN( LOG_LVL_NOISE );
 		
 	DebugAutoLock( mMutex );
 	
 	// Calculate the timeout time in ticks
-	uint32_t ticks = ( period +  kMsPerTick - 1 ) / kMsPerTick;
+	uint32_t ticks = ( period +  mMsPerTick - 1 ) / mMsPerTick;
 	
 	// Initialize new timer node
 	TimerNode timer;
@@ -268,64 +348,8 @@ void TimerManager::sendPeriodicEvent( Event *event,
 	addTimerNode( timer );
 }
 
-void TimerManager::removeTimedEvent( Event *ev )
-{
-	TRACE_BEGIN( LOG_LVL_NOISE );
-	
-	TimerNode timer;
-	
-	DebugAutoLock( mMutex );
-
-	JetHead::list<TimerNode>::iterator node = mList.begin();
-	while (node != mList.end())
-	{
-		// Cast the node as a TimerNode
-		timer = *node;
-		
-		// Check if the timer node has an event for the dispatcher
-		// specified
-		if ( (Event*)timer.mEvent == ev )
-		{
-			node = node.erase();
-			continue;
-		}
-		++node;
-	}	
-}
-
-void TimerManager::removeAgentsByReceiver( void* receiver, 
-										   IEventDispatcher* dispatcher )
-{
-	TRACE_BEGIN( LOG_LVL_NOISE );
-	
-	TimerNode timer;
-
-	DebugAutoLock( mMutex );
-
-	JetHead::list<TimerNode>::iterator i = mList.begin();
-	while (i != mList.end())
-	{
-		// Get the TimerNode
-		timer = *i;
-
-		if ( timer.mEvent->getEventId() == Event::kAgentEventId and
-			 timer.mDispatcher == dispatcher )
-		{
-			LOG_NOTICE("Found an event agent, looking more closely");
-			EventAgent* agent = static_cast<EventAgent*>( (Event*)timer.mEvent );
-			if (agent->getDeliveryTarget() == receiver)
-			{
-				LOG_NOTICE("Found a match, removing");
-				i = i.erase();
-				continue;
-			}
-		}
-		++i;
-	}
-}
-
-void TimerManager::removeTimedEvent( Event::Id eventId,
-									 IEventDispatcher *dispatcher )
+void Timer::removeTimedEvent( Event::Id eventId,
+							  IEventDispatcher *dispatcher )
 {
 	TRACE_BEGIN( LOG_LVL_NOISE );
 	
@@ -355,10 +379,62 @@ void TimerManager::removeTimedEvent( Event::Id eventId,
 		}
 		++i;
 	}
-	
 }
 
-void TimerManager::addTimerNode( const TimerNode& newTimer )
+void Timer::removeTimedEvent( Event *ev )
+{
+	TRACE_BEGIN( LOG_LVL_NOISE );
+	
+	TimerNode timer;
+	
+	DebugAutoLock( mMutex );
+
+	JetHead::list<TimerNode>::iterator node = mList.begin();
+	while (node != mList.end())
+	{
+		// Cast the node as a TimerNode
+		timer = *node;
+		
+		// Check if the timer node has an event for the dispatcher
+		// specified
+		if ( (Event*)timer.mEvent == ev )
+		{
+			node = node.erase();
+			continue;
+		}
+		++node;
+	}	
+}
+
+void Timer::removeAgentsByReceiver( void* receiver,
+									IEventDispatcher* dispatcher )
+{
+	TRACE_BEGIN( LOG_LVL_NOISE );
+	
+	TimerNode timer;
+	DebugAutoLock( mMutex );
+
+	JetHead::list<TimerNode>::iterator i = mList.begin();
+	while (i != mList.end())
+	{
+		// Get the TimerNode
+		timer = *i;
+
+		if ( timer.mEvent->getEventId() == Event::kAgentEventId and
+			 timer.mDispatcher == dispatcher )
+		{
+			EventAgent* agent = static_cast<EventAgent*>( (Event*)timer.mEvent );
+			if (agent->getDeliveryTarget() == receiver)
+			{
+				i = i.erase();
+				continue;
+			}
+		}
+		++i;
+	}
+}
+
+void Timer::addTimerNode( const TimerNode& newTimer )
 {
 	TRACE_BEGIN( LOG_LVL_NOISE );
 

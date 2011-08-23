@@ -31,7 +31,7 @@
 #include "Event.h"
 #include "Thread.h"
 #include "Mutex.h"
-#include "EventAgent.h"
+#include "TimerManager.h"
 #include "jh_list.h"
 
 class TimerListener
@@ -48,21 +48,54 @@ protected:
 	virtual ~TimerListener() {}
 };
 
-class TimerManager
+
+class Timer : public RefCount
 {
 public:
-	//! Prevent non-singleton usage
-	TimerManager();
-
 	/**
-	 * Prevent anyone from destroying this in any way other than
-	 * destroyManager
+	 *  @brief Initialize a new Timer
+	 *
+	 *  Create a new timer and set the requested tick time.   All clients
+	 *  serviced by this timer will have a minimum resolution of the tick
+	 *  time set at initialization.
+	 *
+	 *	NOTE:   All Timer objects are started immediately upon creation.
+	 *
+	 *  @param  tickTimeMs - Tick time in milliseconds for this Timer
+	 *  @param  stoppable - Indicates whether timer is stoppable
 	 */
-	~TimerManager();
-
+	Timer(int tickTimeMs,
+		  bool stoppable = true);
+	
 	/**
-	 * Add an event to be dispatcher to the given dispatcher at a time in 
-	 *  the furture.  This event's ref count will be incremented to ensure
+	 *  @brief Get tick time in milliseconds for this Timer
+	 */
+	int getTickTime();
+	
+	/**
+	 *  @brief Start timer
+	 *
+	 *  This method starts the timer thread which will accumulate ticks
+	 *  using the interval specified at construction.   This method will
+	 *  do nothing if the Timer is already running.
+	 */
+	void start();
+	
+	/**
+	 *  @brief Stop timer
+	 *
+	 *  This method stops a running timer thread.   On exit the thread
+	 *  is stopped and the timer is no longer running.   This also results
+	 *  in all current timer nodes being destroyed without firing.
+	 *  This method will do nothing if the Timer is not stoppable.
+	 */
+	void stop();
+	
+	/**
+	 * @brief Add event to be dispatched in the future
+	 *
+	 *  Add an event to be dispatched to the given dispatcher at a time in 
+	 *  the future.  This event's ref count will be incremented to ensure
 	 *  the event is not destroyed while we wait.  NOTE: use the Selector or
 	 *  EventThread to send timed events do no call this directly.
 	 *
@@ -75,7 +108,9 @@ public:
 						 uint32_t msecs );
 
 	/**
-	 * Add an event to be dispatcher to the given dispatcher with a
+	 * @brief Add event to be dispatched periodically
+	 *
+	 *  Add an event to be dispatched to the given dispatcher with a
 	 *  regular period.  This event's ref count will be incremented to
 	 *  ensure the event is not destroyed before it is removed.  NOTE: use
 	 *  the Selector or EventThread to send timed events do no call
@@ -83,15 +118,15 @@ public:
 	 *
 	 * @param event - the event to send.
 	 * @param dispatcher - the dispatcher to dispatch event to
-	 * @param msecs - how many milliseconds to wait before dispatching.
+	 * @param period - how many milliseconds to wait before dispatching.
 	 */
 	void sendPeriodicEvent( Event *event,
 							IEventDispatcher *dispatcher,
 							uint32_t period );
 
 	/**
-	 * Remove all timed event from a given dispatcher with a certian
-	 * id or if id is kInvalidId then remove all events on the given
+	 * Remove all timed events from a given dispatcher with a certian
+	 * event id or if id is kInvalidId then remove all events on the given
 	 * dispatcher.
 	 *
 	 * @param event_id - the event id to remove or kInvalidEventId to
@@ -119,18 +154,37 @@ public:
 	void removeAgentsByReceiver(void *reciever, IEventDispatcher *dispatcher);
 
 	/**
+	 * Add a timer listener for a one time delayed notification
+	 *
+	 * @param listener - the listener to send notification to
+	 * @param msecs - how many milliseconds to wait before notification
+	 * @param private_data - private data associated with the notification
+	 */
+	/**
 	 * Add a timer listener.  This listener will be called after msecs.
 	 */
 	void addTimer( TimerListener *listener, 
-				   uint32_t msecs, uint32_t private_data );
+				   uint32_t msecs,
+				   uint32_t private_data );
 	
-	//! Get the singleton TimerManager
-	static TimerManager *getInstance();
-
-	//! Destroy the TimerManager (until the next call to getInstance)
-	static void destroyManager();
+	/**
+	 * Add a timer listener for a periodic delayed notification.
+	 *
+	 * @param listener - the listener to send notification to
+	 * @param period - how many milliseconds to wait before notification
+	 * @param private_data - private data associated with the notification
+	 */
+	/**
+	 * Add a timer listener.  This listener will be called after msecs.
+	 */
+	void addPeriodicTimer( TimerListener *listener,
+						   uint32_t msecs,
+						   uint32_t private_data );
+protected:
 	
-private:
+	//!  Reference counted object, destructor is protected.
+	virtual ~Timer();
+	
 	//! These are the time events we are currently tracking
 	struct TimerNode
 	{
@@ -165,18 +219,21 @@ private:
 	//! Handle a clock tick (every kMsPerTick)
 	void handleTick();
 	
-	//! How many ms do we wait per tick?
-	static const int kMsPerTick = 100;
+	//! Reset timeout list and mTicks
+	void reset();
 	
-	//! Our signal handler for dealing with sigalrm
-	static void signalHandler( int signal );
-	
-	//! Our singleton 
-	static TimerManager *mSingleton;
+	//! Stop the clock thread and clean up data associated with it.
+	void doStop();
 	
 	//! Our thread
-	Runnable<TimerManager> *mClockThread;
+	Runnable<Timer> *mClockThread;
 
+	//! What is the resolution of this Timer in ms.
+	int mMsPerTick;
+	
+	//! Is this Timer "stoppable" or not
+	bool mStoppable;
+	
 	//! Locking for internal state (only really mList and mTicks)
 	Mutex mMutex;
 	
