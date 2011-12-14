@@ -1,0 +1,7 @@
+
+interface ITest
+{
+  void PrintNumber( in long num );
+  void PrintName( in string name );
+};
+

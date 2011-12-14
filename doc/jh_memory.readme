@@ -1,0 +1,118 @@
+Overview
+========
+
+JetHead Memory Tracing for standard mtracing of free/alloc operations.  We have also instrumented guard banding in our library.
+
+
+
+Use of mtracing
+===============
+
+To use our mtracing, you will need to change your 'new's to 'jh_new's, include the header jh_types.h, and link to libjhcommon.a (or libjhcommongb.a if you want guard-banding support).  To start the mtracing, you will need to call the "setTraceFile" function with the first and only parameter a filename to write the mtrace data to.  To stop the mtracing, simply pass the same function a NULL.  If the same filename is passed, and it is still open, the buffers will be flushed.
+
+Once you have a trace file, you can use the mtrace.pl script on it (mtrace is also a standard part of the glibc package on most linux distributions).  Simply invoke mtrace.pl with the first argument your mtrace file.
+
+NOTE: The only needed code in jh_types.h is the #define of jh_new to the overloaded new with file and line numbers.  If you move these defines to another file, simply include jh_memory.h.
+
+
+
+Example of a leak
+-----------------
+
+#include "jh_types.h"
+
+int main()
+{
+	DummyClass *dummy1 = jh_new DummyClass();
+
+	setTraceFile("./testmtracefile");
+
+	DummyClass *dummy2 = jh_new DummyClass();
+
+	setTraceFile(NULL);
+
+	return 0;
+}
+
+After running:
+	> mtrace.pl testmtracefile
+
+You should see output similar to this:
+	Memory not freed:
+	-----------------
+	   Address     Size     Caller
+	   0x10001430      0x1  at test.cpp:18
+
+Since the memory you 'jh_new'ed was never deleted.  The first jh_new is before mtracing is on, so you will not detect that leak.
+
+
+
+Example with no visible leak
+----------------------------
+
+#include "jh_types.h"
+
+int main()
+{
+	DummyClass *dummy1 = jh_new DummyClass();
+
+	setTraceFile("./testmtracefile");
+
+	DummyClass *dummy2 = jh_new DummyClass();
+
+	jh_free(dummy2);
+
+	setTraceFile(NULL);
+	return 0;
+}
+
+Then the trace will show:
+	No memory leaks.
+
+If you move the setTraceFile to the beginning of the code, the dummy1 leak would be spotted, so be careful where you place your trace lines.
+
+
+
+
+Guard Banding
+=============
+
+This is to detect if your memory is being stepped on, or if somebody is stepping on your memory.  For this, you will need to link to libjhcommongb.a
+
+
+
+   start guard band
+       |                                              end guard band
+       |    size of alloc                                   |
+       |     |                                              |
+    ------------------------------------------------------------
+    |     |     |              data                      |     |
+    ------------------------------------------------------------
+
+
+If the start guard band, size, or end guard band is over-written by anything, when trying to free/delete your memory, you will be notified and
+quit.
+
+
+
+Example with start guard band being over-written
+------------------------------------------------
+
+int main()
+{
+	char *foo;
+
+	foo = new char[20];
+
+	//Step on memory's start band allocated for foo
+	foo -= 1;
+	foo[0] = 0x0;
+	foo += 1;
+
+	jh_free( foo );
+
+	return 0;
+}
+
+This should produce the following:
+	jh_memory: STARTGaurd band does not validate (0x10000390) (test.cpp:40)

@@ -1,0 +1,43 @@
+#include "ISupports.idl"
+
+enum GlobalEnum {
+  ENUM1,
+  ENUM2,
+  ENUM3
+};
+
+struct Test1
+{
+  long p;
+  string a[ 2 ];
+};
+
+struct Test
+{
+  long p1;
+  short p2;
+  string p3;
+};
+
+[IID(IFoo)]
+interface IFoo : ISupports
+{
+  void Bar( in string a, out long b );
+  short Bar2( in unsigned long c, out string d );
+};
+
+interface IBar : ISupports, IFoo
+{ 
+	enum ScopedEnum {
+		SENUM1,
+		SENUM2,
+		SENUM3
+	};
+
+	struct ScopedStruct {
+		IFoo mFoo;
+		long nNum;
+	};
+		
+	[async] void fu( in Test1 a, out string b );
+};

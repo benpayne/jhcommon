@@ -1,0 +1,26 @@
+
+enum IdTypes
+{
+    IID,
+    CID,
+    OID
+};
+
+struct IdType
+{
+  long id[ 4 ];
+};
+
+typedef unsigned long long uint64_t;
+typedef unsigned long uint32_t;
+typedef unsigned short uint16_t;
+
+[IID(ISupports)]
+interface ISupports
+{
+	long QueryInterface( in string iid, out ISupports obj );
+	long AddRef();
+	long Release();
+};
+
+
