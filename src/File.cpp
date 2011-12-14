@@ -95,11 +95,13 @@ JetHead::ErrCode File::open( const char *name, int flags )
 			sys_flags |= O_APPEND;
 	}
 	
+#ifndef PLATFORM_DARWIN
 	// This is a Linux specific construct that we support on those systems.  
 	//  if O_DIRECT is not passed, all calling code should still work on the 
 	//  non-Linux platform.
 	if ( flags & OF_ODIRECT )
 		sys_flags |= O_DIRECT;
+#endif
 	
 	LOG( "sys_flags %x", sys_flags );
 	

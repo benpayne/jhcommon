@@ -227,6 +227,10 @@ void logging_mark( int num );
 
 void logging_show_files( FILE *file );
 
+#ifndef JH_VERSION_STRING
+#define JH_VERSION_STRING "Debug"
+#endif
+
 static inline const char *getVersionString(void)
 {
 	return JH_VERSION_STRING;
