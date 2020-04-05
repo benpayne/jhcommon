@@ -95,7 +95,12 @@ Timer* TimerManager::getTimer(int tickTimeMs)
 	
 	// Lock mutex while accessing/modifying mTimers vector
 	AutoLock l(mMutex);
-	
+
+	if (mDefaultTimer->getTickTime() == tickTimeMs)
+	{
+		return mDefaultTimer;
+	}
+
 	for (unsigned i = 0; i < mTimers.size(); ++i)
 	{
 		if (mTimers[i]->getTickTime() == tickTimeMs)
@@ -118,7 +123,8 @@ void TimerManager::removeTimedEvent( Event::Id eventId,
 	
 	// Lock mutex while accessing/modifying mTimers vector
 	AutoLock l(mMutex);
-	
+
+	mDefaultTimer->removeTimedEvent(eventId, dispatcher);
 	for (unsigned i = 0; i < mTimers.size(); ++i)
 	{
 		mTimers[i]->removeTimedEvent(eventId, dispatcher);
@@ -132,7 +138,9 @@ void TimerManager::removeTimedEvent( Event *ev )
 
 	// Lock mutex while accessing/modifying mTimers vector
 	AutoLock l(mMutex);
-	
+
+	LOG("mTimers %d", mTimers.size());
+	mDefaultTimer->removeTimedEvent(ev);
 	for (unsigned i = 0; i < mTimers.size(); ++i)
 	{
 		mTimers[i]->removeTimedEvent(ev);
@@ -145,7 +153,8 @@ void TimerManager::removeAgentsByReceiver( void* receiver,
 {
 	// Lock mutex while accessing/modifying mTimers vector
 	AutoLock l(mMutex);
-	
+
+	mDefaultTimer->removeAgentsByReceiver(receiver, dispatcher);
 	for (unsigned i = 0; i < mTimers.size(); ++i)
 	{
 		mTimers[i]->removeAgentsByReceiver(receiver, dispatcher);
