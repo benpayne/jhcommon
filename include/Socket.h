@@ -310,7 +310,7 @@ namespace JetHead
 		 *
 		 * 	@return	Number of bytes received
 		 */	
-		int recvmsg(const JetHead::vector<iovec> &buffers,
+		int recvmsg(const JHSTD::vector<iovec> &buffers,
 					const Socket::Address *addr = NULL, int flags=0);
 	
 	
@@ -329,7 +329,7 @@ namespace JetHead
 		 *
 		 * 	@return Number of bytes sent
 		 */
-		int sendmsg(const JetHead::vector<iovec> &buffers,
+		int sendmsg(const JHSTD::vector<iovec> &buffers,
 					const Socket::Address *addr = NULL, int flags=0);
 	
 		//! Close the socket

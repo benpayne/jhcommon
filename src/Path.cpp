@@ -132,9 +132,9 @@ ErrCode Path::mkdir()
 }
 
 ErrCode Path::mkdirs()
-{	
-	JetHead::vector<JHSTD::string> parts;
-	JetHead::vector<JHSTD::string> parts2;
+{
+	JHSTD::vector<JHSTD::string> parts;
+	JHSTD::vector<JHSTD::string> parts2;
 	JetHead::split( mPath, "/", parts );
 	Path p = parts[ 0 ];
 	
@@ -159,7 +159,7 @@ Path Path::parent()
 	Path p = *this;
 	p.normalize();
 
-	unsigned pos = p.mPath.rfind( "/" );
+	auto pos = p.mPath.rfind( "/" );
 
 	//if ( pos == mPath.length() - 1 )
 	//	pos = mPath.rfind( "/", pos - 1 );
@@ -180,7 +180,7 @@ string Path::filename()
 	Path p = *this;
 	p.normalize();
 	
-	unsigned pos = p.mPath.rfind( "/" );
+	auto pos = p.mPath.rfind( "/" );
 
 	if ( pos == string::npos )
 	{
@@ -196,7 +196,7 @@ string Path::filename()
 string Path::fileBasename()
 {
 	string f = filename();
-	unsigned pos = f.rfind( "." );
+	auto pos = f.rfind( "." );
 
 	if ( pos == string::npos )
 	{
@@ -212,7 +212,7 @@ string Path::fileBasename()
 string Path::filenameExtention()
 {
 	string f = filename();
-	unsigned pos = f.rfind( "." );
+	auto pos = f.rfind( "." );
 
 	if ( pos == string::npos )
 	{
@@ -229,11 +229,8 @@ bool Path::isFile()
 	struct stat buf;
 	
 	int res = stat( mPath.c_str(), &buf );
-	
-	if ( res == 0 && (buf.st_mode & S_IFREG) )
-		return true;
-	else 
-		return false;
+
+	return res == 0 && (buf.st_mode & S_IFREG);
 }
 
 bool Path::isDir()
@@ -241,11 +238,8 @@ bool Path::isDir()
 	struct stat buf;
 	
 	int res = stat( mPath.c_str(), &buf );
-	
-	if ( res == 0 && (buf.st_mode & S_IFDIR) )
-		return true;
-	else 
-		return false;
+
+	return res == 0 && (buf.st_mode & S_IFDIR);
 }
 
 bool Path::exists()
@@ -253,11 +247,8 @@ bool Path::exists()
 	struct stat buf;
 	
 	int res = stat( mPath.c_str(), &buf );
-	
-	if ( res == 0 )
-		return true;
-	else
-		return false;
+
+	return res == 0;
 }
 
 jh_off64_t Path::length()
@@ -274,10 +265,7 @@ jh_off64_t Path::length()
 
 bool	Path::isRelative()
 {
-	if ( mPath[ 0 ] == PATH_SEPERATOR )
-		return false;
-	else
-		return true;
+	return mPath[0] != PATH_SEPERATOR;
 }
 
 bool	Path::makeAbsolute()
@@ -293,8 +281,8 @@ bool	Path::makeAbsolute()
 
 bool	Path::normalize()
 {
-	JetHead::vector<JHSTD::string> parts;
-	JetHead::vector<JHSTD::string> parts2;
+	JHSTD::vector<JHSTD::string> parts;
+	JHSTD::vector<JHSTD::string> parts2;
 	JetHead::split( mPath, "/", parts );
 	bool start = true;
 	
@@ -303,7 +291,7 @@ bool	Path::normalize()
 		if ( parts[ i ] == ".." )
 		{
 			if ( !start )
-				parts2.erase( parts2.size() - 1	);
+				parts2.erase( parts2.end()	);
 			else
 				parts2.push_back( parts[ i ] );
 		}

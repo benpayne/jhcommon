@@ -548,7 +548,7 @@ int Socket::sendto(const void* buf, int len, const Socket::Address& addr,
 					(socklen_t)addr.mLen);
 }
 
-int Socket::recvmsg(const JetHead::vector<iovec> &buffers,
+int Socket::recvmsg(const JHSTD::vector<iovec> &buffers,
 					const Socket::Address *addr, int flags)
 {
 	msghdr msg;
@@ -563,7 +563,7 @@ int Socket::recvmsg(const JetHead::vector<iovec> &buffers,
 	return ::recvmsg(mFd, &msg, flags); 
 }
 
-int Socket::sendmsg(const JetHead::vector<iovec> &buffers,
+int Socket::sendmsg(const JHSTD::vector<iovec> &buffers,
 					const Socket::Address *addr, int flags)
 {
 	msghdr msg;

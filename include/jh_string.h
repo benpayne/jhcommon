@@ -37,7 +37,7 @@
 
 #include <cstdarg>
 
-#ifdef USE_JETHEAD_STRING
+#ifdef USE_JETHEAD_STL
 #define JHSTD	JetHead
 #else
 #define JHSTD	std
@@ -51,7 +51,7 @@
 namespace JetHead
 {
 
-#ifdef USE_JETHEAD_STRING
+#ifdef USE_JETHEAD_STL
 	template <class charT>
 	class basic_string
 	{
@@ -791,13 +791,13 @@ namespace JetHead
 	 */
 
 	template <class _string>
-	int	split( const _string &str, const _string &split_chars, JetHead::vector<_string> &parts )
+	int	split( const _string &str, const _string &split_chars, JHSTD::vector<_string> &parts )
 	{
 		return split( str, split_chars.c_str(), parts );
 	}
 	
 	template <class _string>
-	int	split( const _string &str, const char *split_chars, JetHead::vector<_string> &parts )
+	int	split( const _string &str, const char *split_chars, JHSTD::vector<_string> &parts )
 	{
 		unsigned pos = str.find_first_of( split_chars );
 		unsigned start = 0;

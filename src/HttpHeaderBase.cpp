@@ -85,7 +85,7 @@ int HttpHeaderBase::send(IReaderWriter *writer) const
 		buildHeader();
 	}
 	
-	LOG("Writing header of length %d", mHeaderStr.size());
+	LOG("Writing header of length %lu", mHeaderStr.size());
 	
 	return writer->write(mHeaderStr.c_str(), mHeaderStr.size());
 }
@@ -123,7 +123,7 @@ int HttpHeaderBase::sendto(Socket *writer, const Socket::Address& addr) const
 		buildHeader();
 	}
 	
-	LOG("Writing header of length %d", mHeaderStr.size());
+	LOG("Writing header of length %lu", mHeaderStr.size());
 	
 	return writer->sendto(mHeaderStr.c_str(), mHeaderStr.size(), addr);
 }

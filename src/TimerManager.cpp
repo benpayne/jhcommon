@@ -196,7 +196,7 @@ void TimerManager::removeTimer(Timer* timer)
 		// we need to remove our weak reference.
 		if (mTimers[i] == timer)
 		{
-			mTimers.erase(i);
+			mTimers.erase(mTimers.begin()+i);
 			return;
 		}
 	}

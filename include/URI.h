@@ -126,7 +126,7 @@ private:
 	JHSTD::string mAuthority;
 	JHSTD::string mPath;
 	JHSTD::string mFragment;
-	JetHead::vector<QueryParam> mQueryParams;
+	JHSTD::vector<QueryParam> mQueryParams;
 };
 
 #endif // JH_URI_H_

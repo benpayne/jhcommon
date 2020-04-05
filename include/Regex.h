@@ -199,7 +199,7 @@ private:
 	} mState;
 	
 	Element	mRoot;
-	JetHead::vector<GroupData>	mGroups;
+	JHSTD::vector<GroupData>	mGroups;
 	RegexPrepareError mErrorData;
 };
 

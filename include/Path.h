@@ -106,7 +106,7 @@ namespace JetHead
 		bool isDir();
 		bool exists();	
 		
-		ErrCode list( JetHead::vector<Path> &entries );
+		ErrCode list( JHSTD::vector<Path> &entries );
 
 		URI	toURI();
 		

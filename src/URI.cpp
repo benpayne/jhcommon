@@ -36,7 +36,7 @@
 SET_LOG_CAT( LOG_CAT_ALL );
 SET_LOG_LEVEL( LOG_LVL_NOTICE );
 
-using JetHead::vector;
+using JHSTD::vector;
 using JHSTD::string;
 
 
@@ -255,7 +255,7 @@ void URI::removeQueryParam( const string &key )
 	
 	if ( i != -1 )
 	{
-		mQueryParams.erase( i );
+		mQueryParams.erase(mQueryParams.begin()+i);
 	}
 	mModifiedQuery = true;
 }

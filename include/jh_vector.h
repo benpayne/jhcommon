@@ -38,6 +38,11 @@
  * replicated dozens of times throughout the codebase.
  */
 
+#ifndef USE_JETHEAD_STL
+#define JHSTD	std
+#include <vector>
+#else
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <memory>
@@ -301,5 +306,6 @@ namespace JetHead
 
 	};
 };
+#endif // USE_JETHEAD_STL
 
 #endif // JH_VECTOR_H

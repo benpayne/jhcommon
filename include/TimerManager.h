@@ -142,7 +142,7 @@ private:
 	static TimerManager *mSingleton;
 	
 	//! Weakly referenced list of Timers that are being tracked by TimerManager
-	JetHead::vector<Timer*> mTimers;	
+	JHSTD::vector<Timer*> mTimers;
 	
 	//! Locking for internal state
 	Mutex mMutex;

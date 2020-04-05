@@ -222,7 +222,7 @@ namespace JetHead
 		const Path *getEntry( int i );
 		
 	private:
-		JetHead::vector<Path> mData;
+		JHSTD::vector<Path> mData;
 		int mNumberEntries;
 		void *mDirHandle;
 	};
