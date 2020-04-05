@@ -394,7 +394,7 @@ const Path *Directory::getEntry( int i )
 		while ( dir_ptr != NULL && j < read_size )
 		{
 			if ( readdir_r( DIR_HANDLE, &dir, &dir_ptr ) != 0 )
-				return false;
+				return NULL;
 		
 			if ( dir_ptr != NULL )
 			{

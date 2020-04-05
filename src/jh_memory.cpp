@@ -173,14 +173,14 @@ void GCHeap::dumpList()
 
 #ifdef GCHEAP_ENABLED
 
-void *operator new( size_t size ) throw (std::bad_alloc)
+void *operator new( size_t size )
 {
 	GCHeap::InitCheck();
 	GCHeap::ObjInfo *info = GCHeap::defaultHeap->alloc( size, "non-jh_new", 0 );
 	return info->ptr;
 }
 
-void *operator new[]( size_t size ) throw (std::bad_alloc)
+void *operator new[]( size_t size )
 {
 	GCHeap::InitCheck();
 	GCHeap::ObjInfo *info = GCHeap::defaultHeap->alloc( size, "non-jh_new[]", 0 );
@@ -245,12 +245,12 @@ void operator delete[]( void *p, const char *file, int line )
 
 #else
 
-void *operator new( size_t size ) throw (std::bad_alloc)
+void *operator new( size_t size )
 {
 	return ::malloc(size);
 }
 
-void *operator new[]( size_t size ) throw (std::bad_alloc)
+void *operator new[]( size_t size )
 {
 	return ::malloc(size);
 }

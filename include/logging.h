@@ -231,7 +231,7 @@ void logging_show_files( FILE *file );
 #define JH_VERSION_STRING "Debug"
 #endif
 
-static inline const char *getVersionString(void)
+static inline const char *getVersionString()
 {
 	return JH_VERSION_STRING;
 }
@@ -244,7 +244,7 @@ static inline const char *getVersionString(void)
 __END_DECLS
 
 
-#define LOG_BIT_VALUE( x )	( 1 << x )
+#define LOG_BIT_VALUE( x )	( 1u << x )
 
 /**
  * @brief Logging Categories -
@@ -254,8 +254,8 @@ __END_DECLS
  * global one if added will start with the most significant bit and
  * work down.
  */
-#define LOG_CAT_DEFAULT	LOG_BIT_VALUE( 31 )
-#define LOG_CAT_TRACE	LOG_BIT_VALUE( 30 )
+#define LOG_CAT_DEFAULT	LOG_BIT_VALUE( 31u )
+#define LOG_CAT_TRACE	LOG_BIT_VALUE( 30u )
 
 #define LOG_CAT_ALL		0xffffffff
 
@@ -431,7 +431,7 @@ private:
 class AutoRegister {
 public:
 	AutoRegister( const char *file, uint32_t *cats,
-				  int *level )
+				  int *level ) noexcept
 	{
 		register_logging( file, cats, level );
 	}
