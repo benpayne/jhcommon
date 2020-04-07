@@ -199,6 +199,9 @@ class AutoLock
  private:
 	//! The mutex we are holding
 	Mutex &mMutex;
+
+	//! if the mutex is locked
+	bool mLocked;
 	
 	//! Filename for trace info
 	const char *mFile;

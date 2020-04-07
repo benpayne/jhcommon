@@ -170,20 +170,21 @@ void Mutex::create_lock()
 
 
 AutoLock::AutoLock( Mutex &m )
-	: mMutex( m ), mFile( "AutoLock" ), mLine( 0 )
+	: mMutex( m ), mLocked(true), mFile( "AutoLock" ), mLine( 0 )
 {
 	mMutex.TraceLock( "AutoLock", 0 );
 }
 
 AutoLock::AutoLock( Mutex &m, const char *file, int line )
-	: mMutex( m ), mFile( file ), mLine( line )
+	: mMutex( m ), mLocked(true), mFile( file ), mLine( line )
 {
 	mMutex.TraceLock( file, line );
 }
 
 AutoLock::~AutoLock()
 {
-	mMutex.TraceUnlock( mFile, mLine );
+	if (mLocked)
+		mMutex.TraceUnlock( mFile, mLine );
 }
 
 void AutoLock::Lock()
@@ -193,5 +194,6 @@ void AutoLock::Lock()
 
 void AutoLock::Unlock()
 {
+	mLocked = false;
 	mMutex.Unlock();
 }
