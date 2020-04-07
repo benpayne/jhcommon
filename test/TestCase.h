@@ -169,7 +169,7 @@ public:
 	}
 	
 private:
-	JetHead::vector<TestCase*>	mTestCases;
+	JHSTD::vector<TestCase*>	mTestCases;
 
 	friend class TestRunner;
 };

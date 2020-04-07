@@ -731,7 +731,7 @@ private:
 	{
 		// JetHead split test
 		JHSTD::string s( "This is a\ttest" );
-		JetHead::vector<JHSTD::string> parts;
+		JHSTD::vector<JHSTD::string> parts;
 		
 		int res = JetHead::split( s, " \t", parts );
 		

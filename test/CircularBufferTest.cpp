@@ -44,7 +44,7 @@ SET_LOG_LEVEL( LOG_LVL_NOTICE );
 
 // Stuff to keep make life easy
 #include <algorithm>
-#include <ext/numeric>
+#include <numeric>
 
 #include <iostream>
 #include <time.h>
@@ -54,7 +54,6 @@ SET_LOG_LEVEL( LOG_LVL_NOTICE );
 #include <Thread.h>
 #include <Condition.h>
 #include <Mutex.h>
-using namespace __gnu_cxx;
 
 #include "TestCase.h"
 
