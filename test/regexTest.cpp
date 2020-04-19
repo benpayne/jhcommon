@@ -30,7 +30,7 @@
 
 #include <string.h>
 
-#include "Regex.h"
+#include "jh_Regex.h"
 
 SET_LOG_CAT( LOG_CAT_ALL );
 SET_LOG_LEVEL( LOG_LVL_INFO );

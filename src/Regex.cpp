@@ -25,7 +25,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
  
-#include "Regex.h"
+#include "jh_Regex.h"
 #include "jh_memory.h"
 #include "logging.h"
 #include <string.h>
