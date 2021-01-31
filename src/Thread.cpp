@@ -184,7 +184,7 @@ Thread *Thread::GetCurrent()
  * This is really not needed since Thread * will be unique, but it could be 
  *  useful later.
  */
-bool Thread::operator==( const Thread &t )
+bool Thread::operator==( const Thread &t ) const
 {
 	return mThread == t.mThread;
 }

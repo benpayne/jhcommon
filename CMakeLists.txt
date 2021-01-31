@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 3.12)
 project (JHCOMMON)
 
 include_directories(${JHCOMMON_SOURCE_DIR}/include)

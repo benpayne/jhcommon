@@ -69,7 +69,7 @@ public:
 	/**
 	 * Get a threads name.
 	 */
-	const char *GetName() { return mName; }
+	const char *GetName() const { return mName; }
 
 	/** 
 	 * Block the calling thread until this thread exits.  
@@ -82,7 +82,7 @@ public:
 	/** 
 	 * Test if two instances of the Thread class are the same thread.
 	 */ 
-	bool operator==( const Thread &t );
+	bool operator==( const Thread &t ) const;
 	
 	/** 
 	 * Exit the current running thread
