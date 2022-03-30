@@ -4,7 +4,8 @@ add_library(jhcommon SHARED Allocator.cpp AppArgs.cpp CircularBuffer.cpp Conditi
 		     HttpRequest.cpp HttpResponse.cpp JetHead.cpp MulticastSocket.cpp
 		     Mutex.cpp Path.cpp Regex.cpp Selector.cpp Socket.cpp
 		     Thread.cpp Timer.cpp TimerManager URI.cpp jh_memory.cpp logging.cpp)
-		     
+target_compile_options(jhcommon PUBLIC -Wno-deprecated-declarations -Wno-write-strings)
+
 add_library(jhcomserver SHARED ComponentManager.cpp ComponentManagerUtils.cpp)
 target_link_libraries(jhcomserver jhcommon ${JHCOM_LIBS} )
 

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2010, JetHead Development, Inc.
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the JetHead Development nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -39,7 +39,7 @@ void *jh_alloc( size_t size, const char *file, int line );
 void jh_free( void *ptr, const char *file, int line );
 /**
  *  Set mTrace File
- * 
+ *
  *  Description:
  *  	This function turns off/on mTracing by passing in
  *  	a filename to start the mTracing, or passing it
@@ -87,19 +87,19 @@ public:
 		const char *file;
 		int line;
 		//char thread_name[ Thread::kThreadNameLen ];
-		
+
 		void AddRef() const
 		{
-			++refCnt; 
+			++refCnt;
 		}
 
 		void Release() const
 		{
-			--refCnt;		
+			--refCnt;
 			assert( refCnt >= 0 );
 		}
 	};
-	
+
 	ObjInfo *alloc( size_t size, const char *file, int line );
 	void free( ObjInfo *info );
 
@@ -107,8 +107,8 @@ public:
 	 * Print a list of all current allocations.
 	 */
 	void dumpList();
-	
-	/** 
+
+	/**
 	 * Find the object for a pointer, we look for any objects that contains
 	 *  this ptr.  Or ptr doesn't have to equal the pointer that was allocated.
 	 *  This comes in handy when you have multiple inheritance and the pointer
@@ -116,9 +116,9 @@ public:
 	 *  equal each other.
 	 */
 	ObjInfo *find( void *ptr );
-	
+
 	/**
-	 * Simply convert the pointer into an ObjInfo assuming ptr is equal to the 
+	 * Simply convert the pointer into an ObjInfo assuming ptr is equal to the
 	 *  pointer allocated.
 	 */
 	static ObjInfo *quick_find( void *ptr );
@@ -126,17 +126,17 @@ public:
 	/**
 	 * Ensure the default heap is initialized
 	 */
-	static inline void InitCheck() 
+	static inline void InitCheck()
 	{
 		if (defaultHeap == NULL)
 		{
 			void *ptr = malloc( sizeof( GCHeap ) );
 			defaultHeap = new (ptr) GCHeap;
-		}		
+		}
 	}
-	
+
 	static GCHeap *defaultHeap;
-	
+
 private:
 	TypedList<ObjInfo> mObjects;
 	int mCurrentSize;
@@ -145,8 +145,13 @@ private:
 	int mNumCurrentAllocations;
 };
 
+#if __cplusplus < 201703L  // pre C++17
 void *operator new( size_t size ) throw (std::bad_alloc);
 void *operator new[]( size_t size ) throw (std::bad_alloc);
+#else
+void *operator new( size_t size );
+void *operator new[]( size_t size );
+#endif
 void *operator new( size_t size, const char *file, int line );
 void *operator new[]( size_t size, const char *file, int line );
 void operator delete( void *p ) throw ();

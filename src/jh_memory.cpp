@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2010, JetHead Development, Inc.
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the JetHead Development nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -50,22 +50,22 @@
 
 GCHeap *GCHeap::defaultHeap = NULL;
 
-GCHeap::GCHeap() 
+GCHeap::GCHeap()
 	: mCurrentSize(0),
 	  mMaxSize(0),
 	  mNumTotalAllocations(0),
 	  mNumCurrentAllocations(0)
-	  
+
 {
 }
 
 GCHeap::~GCHeap()
 {
 	printf( "waiting for others to complete\n" );
-	
+
 	printf( "Total number of allocations: %d\n", mNumTotalAllocations );
 	printf( "Max size of heap: %d\n", mMaxSize );
-	
+
 	if ( !mObjects.empty() )
 	{
 		printf( "LEAKED, %d objects, totaling %d bytes\n", mNumCurrentAllocations, mCurrentSize );
@@ -73,7 +73,7 @@ GCHeap::~GCHeap()
 		dumpList();
 	}
 }
-	
+
 GCHeap::ObjInfo *GCHeap::alloc( size_t size, const char *file, int line )
 {
 	void *ptr = ::malloc( size + NODE_SIZE );
@@ -89,15 +89,15 @@ GCHeap::ObjInfo *GCHeap::alloc( size_t size, const char *file, int line )
 	//obj->thread_name[ Thread::kThreadNameLen - 1 ] = '\0';
 	Mutex::EnterCriticalSection();
 	mObjects.push_front( obj );
-		
+
 	mCurrentSize += size;
 	if ( mCurrentSize > mMaxSize )
 		mMaxSize = mCurrentSize;
-	
+
 	mNumTotalAllocations++;
 	mNumCurrentAllocations++;
 	Mutex::ExitCriticalSection();
-	
+
 	return obj;
 }
 
@@ -115,11 +115,11 @@ void GCHeap::free( ObjInfo *info )
 	{
 		LOG_ERR_FATAL( "Ref Count not 0, probably deleting an object that is ref counted. [alloc@%s:%d]", info->file, info->line );
 	}
-	
+
 	Mutex::EnterCriticalSection();
-	mCurrentSize -= info->size;	
+	mCurrentSize -= info->size;
 	mNumCurrentAllocations--;
-	
+
 	info->remove();
 	Mutex::ExitCriticalSection();
 	info->magic = MAGIC_FREED;
@@ -137,12 +137,12 @@ GCHeap::ObjInfo *GCHeap::find( void *ptr )
 			Mutex::ExitCriticalSection();
 			return obj;
 		}
-		
+
 		obj = mObjects.next( obj );
 	}
 
 	Mutex::ExitCriticalSection();
-	
+
 	return NULL;
 }
 
@@ -164,7 +164,7 @@ void GCHeap::dumpList()
 			printf( "  [alloc@%s:%d, size %d]\n", obj->file, obj->line, obj->size );
 		else
 			printf( "  corrupted!!! [alloc@%s:%d]\n", obj->file, obj->line );
-	
+
 		obj = mObjects.next( obj );
 	}
 	printf("Items allocated  = %d\n", mNumCurrentAllocations);
@@ -205,7 +205,7 @@ void operator delete( void *p ) throw ()
 {
 	if ( p == NULL )
 		return;
-	
+
 	GCHeap::ObjInfo *info = GCHeap::quick_find( p );
 	info->heap->free( info );
 }
@@ -214,7 +214,7 @@ void operator delete[]( void *p ) throw ()
 {
 	if ( p == NULL )
 		return;
-	
+
 	GCHeap::ObjInfo *info = GCHeap::quick_find( p );
 	info->heap->free( info );
 }
@@ -245,12 +245,20 @@ void operator delete[]( void *p, const char *file, int line )
 
 #else
 
+#if __cplusplus < 201703L  // pre C++17
 void *operator new( size_t size ) throw (std::bad_alloc)
+#else
+void *operator new( size_t size )
+#endif
 {
 	return ::malloc(size);
 }
 
+#if __cplusplus < 201703L  // pre C++17
 void *operator new[]( size_t size ) throw (std::bad_alloc)
+#else
+void *operator new[]( size_t size )
+#endif
 {
 	return ::malloc(size);
 }
@@ -269,7 +277,7 @@ void operator delete( void *p ) throw ()
 {
 	if ( p == NULL )
 		return;
-	
+
 	free(p);
 }
 
