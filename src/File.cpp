@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2010, JetHead Development, Inc.
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the JetHead Development nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -42,12 +42,12 @@ using namespace JetHead;
 SET_LOG_CAT( LOG_CAT_ALL );
 SET_LOG_LEVEL( LOG_LVL_INFO );
 
-File::File() : mFd( -1 ), mSelector( NULL ), mListener( NULL ), 
+File::File() : mFd( -1 ), mSelector( NULL ), mListener( NULL ),
 	mMapAddress( NULL ), mOpenFlags( 0 ), mError( kNoError )
 {
 }
 
-File::File( int fd ) : mFd( fd ), mSelector( NULL ), mListener( NULL ), 
+File::File( int fd ) : mFd( fd ), mSelector( NULL ), mListener( NULL ),
 	mMapAddress( NULL ), mOpenFlags( 0 ), mError( kNoError )
 {
 }
@@ -59,7 +59,7 @@ File::~File()
 
 JetHead::ErrCode File::open( const Path &name, int flags )
 {
-	return open( name.getString().c_str(), flags ); 
+	return open( name.getString().c_str(), flags );
 }
 
 #define O_RDWR_MASK 3
@@ -67,13 +67,13 @@ JetHead::ErrCode File::open( const Path &name, int flags )
 JetHead::ErrCode File::open( const char *name, int flags )
 {
 	int sys_flags = 0;
-	
+
 	TRACE_BEGIN( LOG_LVL_INFO );
-	
+
 	LOG( "Flags %x", flags );
 
 	mOpenFlags = flags;
-	
+
 	if ( ( flags & OF_RDWR ) == OF_RDWR )
 		sys_flags |= O_RDWR;
 	else if ( flags & OF_READ )
@@ -82,8 +82,8 @@ JetHead::ErrCode File::open( const char *name, int flags )
 		sys_flags |= O_WRONLY;
 	else
 		sys_flags |= O_RDONLY;
-	
-	// trunc and append only effect write operations.  We'll ignore if not 
+
+	// trunc and append only effect write operations.  We'll ignore if not
 	//  opening for write.  Since rumor has it some platforms will do strange
 	//  things when you open read only with these flags.
 	if ( flags & OF_WRITE )
@@ -94,17 +94,17 @@ JetHead::ErrCode File::open( const char *name, int flags )
 		else if ( flags & OF_APPEND )
 			sys_flags |= O_APPEND;
 	}
-	
+
 #ifndef PLATFORM_DARWIN
-	// This is a Linux specific construct that we support on those systems.  
-	//  if O_DIRECT is not passed, all calling code should still work on the 
+	// This is a Linux specific construct that we support on those systems.
+	//  if O_DIRECT is not passed, all calling code should still work on the
 	//  non-Linux platform.
 	if ( flags & OF_ODIRECT )
 		sys_flags |= O_DIRECT;
 #endif
-	
+
 	LOG( "sys_flags %x", sys_flags );
-	
+
 	if ( flags & OF_CREATE )
 	{
 		LOG( "Create" );
@@ -118,7 +118,7 @@ JetHead::ErrCode File::open( const char *name, int flags )
 	{
 		return getErrorCode( errno );
 	}
-	
+
 	return JetHead::kNoError;
 }
 
@@ -146,7 +146,7 @@ void File::setSelector( FileListener *listener, Selector *selector )
 	setSelector( listener, selector, POLLIN );
 }
 
-void File::setSelector( FileListener *listener, Selector *selector, 
+void File::setSelector( FileListener *listener, Selector *selector,
 						short events )
 {
 	TRACE_BEGIN(LOG_LVL_NOTICE);
@@ -168,7 +168,7 @@ int File::read( void *buffer, int len )
 
 	if ( res == -1 )
 		setError();
-	
+
 	return res;
 }
 
@@ -178,14 +178,14 @@ int File::write( const void *buffer, int len )
 
 	if ( res == -1 )
 		setError();
-	
+
 	return res;
 }
-	
+
 jh_off64_t	File::getLength() const
 {
 	jh_stat64_t file_status;
-	
+
 	int res = jh_fstat64( mFd, &file_status );
 
 	if ( res == -1 )
@@ -193,43 +193,43 @@ jh_off64_t	File::getLength() const
 		setError();
 		return (jh_off64_t)-1;
 	}
-	
+
 	return file_status.st_size;
 }
 
 jh_off64_t File::seekEnd()
 {
 	jh_off64_t res = jh_lseek( mFd, 0, SEEK_END );
-	
+
 	if ( res == (jh_off64_t)-1 )
 	{
 		setError();
 	}
-	
+
 	return res;
 }
 
 jh_off64_t	File::getPos() const
 {
 	jh_off64_t res = jh_lseek( mFd, 0, SEEK_CUR );
-	
+
 	if ( res == (jh_off64_t)-1 )
 	{
 		setError();
 	}
-	
+
 	return res;
 }
 
 jh_off64_t File::setPos( jh_off64_t offset )
 {
 	jh_off64_t res = jh_lseek( mFd, offset, SEEK_SET );
-	
+
 	if ( res == (jh_off64_t)-1 )
 	{
 		setError();
 	}
-	
+
 	return res;
 }
 
@@ -237,7 +237,7 @@ uint8_t *File::mmap()
 {
 	int prot = PROT_READ;
 	size_t length = getLength();
-	
+
 	if ( ( mOpenFlags & OF_RDWR ) == OF_RDWR )
 		prot |= PROT_WRITE;
 	else if ( mOpenFlags & OF_WRITE )
@@ -255,7 +255,7 @@ uint8_t *File::mmap()
 		setError();
 		addr = NULL;
 	}
-	
+
 	return addr;
 }
 
@@ -291,11 +291,11 @@ JetHead::ErrCode	File::msync()
 
 JetHead::ErrCode	File::fsync()
 {
-	int res = ::fsync( mFd );	
+	int res = ::fsync( mFd );
 
 	if ( res == -1 )
 		return getErrorCode( errno );
-	
+
 	return kNoError;
 }
 
@@ -307,17 +307,17 @@ JetHead::ErrCode	File::pipe( File *pipe_files[ 2 ] )
 
 	if ( res == -1 )
 		return 	getErrorCode( errno );
-	
-	pipe_files[ 0 ] = jh_new File( fds[ 0 ] );	
+
+	pipe_files[ 0 ] = jh_new File( fds[ 0 ] );
 	pipe_files[ 1 ] = jh_new File( fds[ 1 ] );
-	
+
 	return kNoError;
 }
 
 void File::processFileEvents( int fd, short events, jh_ptr_int_t private_data )
 {
 	File *f = (File*)private_data;
-	
+
 	if ( f->mListener != NULL )
 	{
 		f->mListener->handleData( f, events );
@@ -341,32 +341,32 @@ bool Directory::open( const Path &p )
 {
 	if ( mDirHandle != NULL )
 		return false;
-	
+
 	mDirHandle = opendir( p.getString().c_str() );
-	
+
 	mData.reserve( gNumberEntries );
-	
+
 	struct dirent dir;
 	struct dirent *dir_ptr = &dir;
 	int i = 0;
-	
-	// fill with the first gNumberEntries files.  This is done to keep this 
+
+	// fill with the first gNumberEntries files.  This is done to keep this
 	//  from taking too much time if the directory has 1000's of files.
 	while ( dir_ptr != NULL && i < gNumberEntries )
 	{
 		if ( readdir_r( DIR_HANDLE, &dir, &dir_ptr ) != 0 )
 			return false;
-		
+
 		if ( dir_ptr != NULL )
 		{
 			mData[ i ] = dir_ptr->d_name;
 			i += 1;
 		}
 	}
-	
-	if ( dir_ptr == NULL ) 
+
+	if ( dir_ptr == NULL )
 		mNumberEntries = i + 1;
-	
+
 	return true;
 }
 
@@ -379,34 +379,34 @@ const Path *Directory::getEntry( int i )
 	{
 		int start = mData.size();
 		int read_size = i - start;
-		
+
 		if ( read_size < gNumberEntries )
 			read_size = gNumberEntries;
-		
+
 		mData.reserve( start + read_size );
-		
+
 		struct dirent dir;
 		struct dirent *dir_ptr = &dir;
 		int j = 0;
-		
-		// fill with the first gNumberEntries files.  This is done to keep this 
+
+		// fill with the first gNumberEntries files.  This is done to keep this
 		//  from taking too much time if the directory has 1000's of files.
 		while ( dir_ptr != NULL && j < read_size )
 		{
 			if ( readdir_r( DIR_HANDLE, &dir, &dir_ptr ) != 0 )
-				return false;
-		
+				return NULL;
+
 			if ( dir_ptr != NULL )
 			{
 				mData[ start + j ] = dir_ptr->d_name;
 				j += 1;
 			}
 		}
-	
-		if ( dir_ptr == NULL ) 
+
+		if ( dir_ptr == NULL )
 			mNumberEntries = j + 1;
 	}
-	
+
 	if ( i >= (int)mData.size() )
 		return NULL;
 	else
