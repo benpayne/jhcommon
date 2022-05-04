@@ -145,7 +145,7 @@ private:
 	int mNumCurrentAllocations;
 };
 
-#if __cplusplus < 201703L  // pre C++17
+#if __cplusplus < 201103L  // pre C++11
 void *operator new( size_t size ) throw (std::bad_alloc);
 void *operator new[]( size_t size ) throw (std::bad_alloc);
 #else
