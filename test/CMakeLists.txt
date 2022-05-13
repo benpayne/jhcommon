@@ -59,7 +59,7 @@ add_executable(pathTest PathTest.cpp )
 target_link_libraries(pathTest ${JHCOMMON_LIBS} )
 
 add_executable(comServerTest comServer.cpp )
-target_link_libraries(comServerTest ${JHCOMMON_LIBS} jhcomserver )
+target_link_libraries(comServerTest ${JHCOMMON_LIBS} jhcomserver pthread )
 
 add_executable(circularBufTest CircularBufferTest.cpp )
 target_link_libraries(circularBufTest ${JHCOMMON_LIBS} )
