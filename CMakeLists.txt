@@ -24,5 +24,5 @@ set(JHCOMMON_LIBS jhcommon ${CMAKE_THREAD_LIBS_INIT})
 add_subdirectory(src)
 add_subdirectory(test)
 
-
+install(TARGETS jhcommon LIBRARY DESTINATION lib)
 
